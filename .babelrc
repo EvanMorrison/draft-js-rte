@@ -1,0 +1,22 @@
+{
+  "presets": [
+    [
+      "next/babel",
+      {
+        "preset-env": {},
+        "preset-react": {},
+        "transform-runtime": {},
+        "plugin-proposal-class-properties": {}
+      }
+    ],
+    [
+      "@emotion/babel-preset-css-prop",
+      {
+        "autoLabel": true,
+        "labelFormat": "[local]",
+        "sourceMap": true
+      }
+    ]
+  ],
+  "plugins": []
+}
