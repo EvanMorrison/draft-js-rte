@@ -1,5 +1,5 @@
 import styled from "@emotion/styled";
-import ColorHelper from "../../../utils/colorHelper";
+import ColorHelper from "../../utils/colorHelper";
 
 export default styled.div`
   &.message {

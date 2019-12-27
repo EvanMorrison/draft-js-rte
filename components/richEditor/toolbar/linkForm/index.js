@@ -1,7 +1,7 @@
-import Button from "../../../../atoms/button";
-import Formatters from "../../../../utils/formatters";
+import Button from "../../../atoms/button";
+// import Formatters from "../../../../utils/formatters";
 import FormLinker from "form-linker";
-import Masks from "../../../../utils/masks";
+// import Masks from "../../../../utils/masks";
 import React, { useEffect, useReducer, useRef } from "react";
 import Styled from "./linkForm.style";
 import { isEmpty } from "lodash";
@@ -14,8 +14,8 @@ const DropdownContent = props => {
       displayText: "",
       linkUrl: ""
     },
-    formatters: Formatters,
-    masks: Masks,
+    // formatters: Formatters,
+    // masks: Masks,
     schema: {
       entityKey: "string",
       displayText: "string.required",
@@ -63,7 +63,7 @@ const DropdownContent = props => {
     }
   }
 
-  const Field = require("../../../../molecules/field").default;
+  const Field = require("../../../molecules/field").default;
 
   return(
     <Styled>

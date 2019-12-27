@@ -103,10 +103,10 @@ const dropdownControls = {
     method: "formDropdown"
   },
   insertTable: {
-    activeOption: () => ({display: {icon: "table-lgt"}}),
+    activeOption: () => ({display: {icon: "table-sld"}}),
     controlWidth: 40,
     dropdownWidth: 160,
-    icon: "table-lgt",
+    icon: "table-sld",
     method: "tableDropdown"
   }
 };

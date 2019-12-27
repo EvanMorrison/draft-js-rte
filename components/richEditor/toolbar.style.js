@@ -38,7 +38,7 @@ export default styled.div`
         flex-flow: row wrap;
 
         .rich-editor-style-button {
-          color: rgba(${props => HexRgb(props.theme.colors.textOnPageBackground).join()}, 0.75);
+          color: rgba(${props => HexRgb(props.theme.colors.textOnPageBackground, {format: "array"}).slice(0, 2).join()}, 0.75);
           cursor: pointer;
           display: inline-block;
           margin: 3px 0;
@@ -60,9 +60,9 @@ export default styled.div`
 
         .rich-editor-active-button {
           color: ${props => props.theme.colors.textOnPageBackground};
-          border: 1px solid rgba(${props => HexRgb(props.theme.colors.textOnPageBackground).join()}, 0.4);
-          background: rgba(${props => HexRgb(props.theme.colors.textOnPageBackground).join()}, 0.1);
-          box-shadow: inset 0 0 4px rgba(${props => HexRgb(props.theme.colors.textOnPageBackground).join()}, 0.3);
+          border: 1px solid rgba(${props => HexRgb(props.theme.colors.textOnPageBackground, {format: "array"}).slice(0, 2).join()}, 0.4);
+          background: rgba(${props => HexRgb(props.theme.colors.textOnPageBackground, {format: "array"}).slice(0, 2).join()}, 0.1);
+          box-shadow: inset 0 0 4px rgba(${props => HexRgb(props.theme.colors.textOnPageBackground, {format: "array"}).slice(0, 2).join()}, 0.3);
 
           svg {
             fill: currentColor;

@@ -1,10 +1,12 @@
 import ColorTheme from './colorTheme'
+import zIndexes from './z-indexes'
 
 export { default as globalStyle } from './globalStyle'
 
 let colors = new ColorTheme({
-  primary: "#2C3E50",
+  primary: "#333",
   textOnHeader: "#FFFFFF",
+  textOnPrimary: "#FFF",
   secondary: "#C5C5C5",
   info: "#10AFFF",
   primary_report_header: "3D3D3D",
@@ -35,5 +37,5 @@ export const theme = {
   dimensions,
   fonts: ["Roboto, sans-serif", "Lato, sans-serif"],
   fontWeights: [300, 400, 700],
-  zIndexes: null
+  zIndexes
 };

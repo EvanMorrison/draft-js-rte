@@ -6,7 +6,7 @@ import PropTypes from "prop-types";
 import RawHtmlStyle from "./rawHtml.style";
 import React, { useCallback, useEffect, useImperativeHandle, useReducer, useRef, useState } from "react";
 import ScrollMessage from "./toolbar/scrollMessage";
-import Textarea from "../../atoms/textarea";
+import Textarea from "../atoms/textarea";
 import ToolbarStyle from "./toolbar.style";
 import { stateFromHTML } from "draft-js-import-html";
 import { stateToHTML } from "draft-js-export-html";

@@ -1,6 +1,6 @@
-import Button from "../../../../../atoms/button";
+import Button from "../../../../atoms/button";
 import Dropzone from "react-dropzone";
-import Icon from "../../../../../atoms/icon";
+import Icon from "../../../../atoms/icon";
 import ImagePreview from "./preview";
 import React, { useEffect, useRef, useState} from "react";
 import Style from "./image-previewer.style";

@@ -1,6 +1,6 @@
-import Button from "../../atoms/button";
+import Button from "../atoms/button";
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import ColorHelper from "../../utils/colorHelper";
+import ColorHelper from "../utils/colorHelper";
 import { throttle } from "lodash";
 import { css } from "@emotion/core";
 

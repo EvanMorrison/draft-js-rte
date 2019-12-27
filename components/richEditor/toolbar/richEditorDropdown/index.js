@@ -1,5 +1,5 @@
-import DropdownBtn from "../../../../molecules/dropdownBtn";
-import Icon from "../../../../atoms/icon";
+import DropdownBtn from "../../../molecules/dropdownBtn";
+import Icon from "../../../atoms/icon";
 import PropTypes from "prop-types";
 import React from "react";
 import Style from "./dropdown.style";

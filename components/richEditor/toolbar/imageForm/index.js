@@ -1,8 +1,8 @@
-import Button from "../../../../atoms/button";
+import Button from "../../../atoms/button";
 import FormLinker from "form-linker";
-import Formatters from "../../../../utils/formatters";
+// import Formatters from "../../../../utils/formatters";
 import ImagePreviewer from "./imagePreviewer";
-import Masks from "../../../../utils/masks";
+// import Masks from "../../../../utils/masks";
 import React, { useRef, useReducer, useState } from "react";
 import Styled from "./imageForm.style";
 import Translator from "simple-translator";
@@ -17,8 +17,8 @@ const DropdownContent = props => {
       imgFile: null,
       imgUrl: ""
     },
-    formatters: Formatters,
-    masks: Masks,
+    // formatters: Formatters,
+    // masks: Masks,
     schema: {
       imgFile: "file",
       imgUrl: "string"
@@ -46,7 +46,7 @@ const DropdownContent = props => {
 
     return(<div className="error">{Translator.translate("Citadel.organisms.richEditor.emptyForm")}</div>);
   }
-  const Field = require("../../../../molecules/field").default;
+  const Field = require("../../../molecules/field").default;
 
   return(
     <Styled>

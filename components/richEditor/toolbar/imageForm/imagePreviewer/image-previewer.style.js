@@ -16,7 +16,7 @@ export default styled.div`
     overflow: hidden;
     flex: 1;
     max-width: 400px;
-    border: 3px dashed rgba(${props => hexRgb(props.theme.colors.primary).join()}, 0.5);
+    border: 3px dashed rgba(${props => hexRgb(props.theme.colors.primary, {format: "array"}).slice(0, 2).join()}, 0.5);
     text-align: center;
     cursor: pointer;
     padding: 15px;
@@ -32,7 +32,7 @@ export default styled.div`
     }
 
     .icon-cloud {
-      fill: rgba(${props => hexRgb(props.theme.colors.primary).join()}, 0.8);
+      fill: rgba(${props => hexRgb(props.theme.colors.primary, {format: "array"}).slice(0, 2).join()}, 0.8);
       margin-top: -15px;
     }
 
@@ -45,7 +45,7 @@ export default styled.div`
       }
 
       &.file-size-limit {
-        color: rgba(${props => hexRgb(props.theme.colors.primary).join()}, 0.5);
+        color: rgba(${props => hexRgb(props.theme.colors.primary, {format: "array"}).slice(0, 2).join()}, 0.5);
         line-height: 1.2rem;
       }
     }
@@ -63,7 +63,7 @@ export default styled.div`
   @media (max-width: ${props => props.theme.dimensions.desktopBreakpoint}px) {
     .mobile-dropzone {
       display: block;
-      color: rgba(${props => hexRgb(props.theme.colors.primary).join()}, 0.5);
+      color: rgba(${props => hexRgb(props.theme.colors.primary, {format: "array"}).slice(0, 2).join()}, 0.5);
       font-style: italic;
     }
 
