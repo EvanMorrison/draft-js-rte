@@ -1,5 +1,6 @@
 import React from 'react'
 import iconLibrary from './utils/iconLIbrary'
+import Head from 'next/head'
 import { globalStyle, theme } from './utils/theme.config'
 import { ThemeProvider } from 'emotion-theming'
 import { Global } from '@emotion/core'
@@ -12,7 +13,10 @@ const AppLayout = props => {
 
   return(
     <ThemeProvider theme={theme}>
-      <Global style={globalStyle}/>
+      <Global styles={globalStyle}/>
+      <Head>
+        <link href="https://fonts.googleapis.com/css?family=Roboto&display=swap" rel="stylesheet"/>
+      </Head>
       {props.children}
     </ThemeProvider>
   )

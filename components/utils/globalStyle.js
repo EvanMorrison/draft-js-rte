@@ -1,6 +1,12 @@
 import { css } from "@emotion/core";
 
-export default css`
+const globalStyle = theme => css`
+  :root {
+    font-family: ${theme.fonts[0]};
+    font-size: 16px;
+    color: ${theme.colors.textOnPageBackground};
+  }
+
   * {
     margin: 0px;
     padding: 0px;
@@ -89,3 +95,5 @@ export default css`
     counter-reset: ol4;
   }
 `;
+
+export default globalStyle

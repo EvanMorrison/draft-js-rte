@@ -4,18 +4,11 @@ import zIndexes from './z-indexes'
 export { default as globalStyle } from './globalStyle'
 
 let colors = new ColorTheme({
-  primary: "#333",
+  primary: "#F58",
   textOnHeader: "#FFFFFF",
   textOnPrimary: "#FFF",
-  secondary: "#C5C5C5",
+  secondary: "#AAA",
   info: "#10AFFF",
-  primary_report_header: "3D3D3D",
-  headerSlogan: "#19AD47",
-  subHeaderSelected: "#19AD47",
-  table: "#00385B",
-  tableRow: "#DCEEFF",
-  tableHigh: "#337799",
-  tableHeaderText: "#EEEEEE"
 }).exportTheme();
 
 const dimensions = {
