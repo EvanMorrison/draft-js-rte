@@ -126,7 +126,7 @@ export const availableControls = {
   },
   floatRight: {
     callback: "blockDataToggle",
-    icon: "arrow-from-left-sld",
+    icon: "long-arrow-alt-right-sld",
     method: "controlButton",
     tooltip: "Citadel.organisms.richEditor.tooltips.floatRight"
   },

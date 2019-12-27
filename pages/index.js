@@ -1,9 +1,11 @@
-import React, { useRef } from 'react'
+import React, { useReducer, useRef } from 'react'
 import Head from 'next/head'
 import Editor from '../components/richEditor'
 import FormLinker from 'form-linker'
 
 const Home = () => {
+  const [_, forceUpdate] = useReducer(x => x + 1, 0)
+
   const formLinker = useRef(new FormLinker({
     data: {
       editor: ""
@@ -26,8 +28,12 @@ const Home = () => {
         height={250}
         maxHeight={600}
         toolbar={['withImages']}
+        tooltipOrientation="bottom"
+        onChange={forceUpdate}
       />
-
+      <div css={{marginTop: 15, width: "100%", padding: 12, border: "1px solid #000", minHeight: 150}}>
+        <div dangerouslySetInnerHTML={{__html: formLinker.current.data.editor}}></div>
+      </div>
     </div>
   )
 }
