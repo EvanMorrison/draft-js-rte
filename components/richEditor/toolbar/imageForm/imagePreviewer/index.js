@@ -66,15 +66,20 @@ const ImagePreviewer = props => {
       <div>
         <div className="mobile-dropzone">{Translator.translate("Citadel.organisms.richEditor.mobileError")}</div>
         <Dropzone multiple={false} maxSize={5000000} accept={"image/*"} style={{}} className="dropzone" onDropAccepted={drop} onDropRejected={dropError}>
-          <div className="icon-overlay"/>
-          <Icon name="cloud-upload-sld"/>
-          <h3 className="upload-logo-text">{Translator.translate("Citadel.organisms.richEditor.upload")}</h3>
-          <h3 className="upload-logo-text upload-sub">{Translator.translate("Citadel.organisms.richEditor.uploadSub")}</h3>
-          <h4 className="file-size-limit upload-logo-text">
-            {Translator.translate("Citadel.organisms.richEditor.maxFileSize")}
-            <br/>
-            <span className="lighter-text">{Translator.translate("Citadel.organisms.richEditor.imageFormats")}</span>
-          </h4>
+          {({getRootProps, getInputProps}) => (
+            <div className="dropzone" {...getRootProps()}>
+              <input {...getInputProps()}/>
+              <div className="icon-overlay"/>
+              <Icon name="cloud-upload-alt-sld"/>
+              <h3 className="upload-logo-text">{Translator.translate("Citadel.organisms.richEditor.upload")}</h3>
+              <h3 className="upload-logo-text upload-sub">{Translator.translate("Citadel.organisms.richEditor.uploadSub")}</h3>
+              <h4 className="file-size-limit upload-logo-text">
+                {Translator.translate("Citadel.organisms.richEditor.maxFileSize")}
+                <br/>
+                <span className="lighter-text">{Translator.translate("Citadel.organisms.richEditor.imageFormats")}</span>
+              </h4>
+            </div>
+          )}
         </Dropzone>
         {renderError()}
       </div>

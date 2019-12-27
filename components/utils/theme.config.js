@@ -4,8 +4,7 @@ import zIndexes from './z-indexes'
 export { default as globalStyle } from './globalStyle'
 
 let colors = new ColorTheme({
-  primary: "#F58",
-  textOnHeader: "#FFFFFF",
+  primary: "#035",
   textOnPrimary: "#FFF",
   secondary: "#AAA",
   info: "#10AFFF",

@@ -1,6 +1,8 @@
 import React from 'react'
 import iconLibrary from './utils/iconLIbrary'
+import english from './utils/translations/en'
 import Head from 'next/head'
+import Translator from 'simple-translator'
 import { globalStyle, theme } from './utils/theme.config'
 import { ThemeProvider } from 'emotion-theming'
 import { Global } from '@emotion/core'
@@ -9,8 +11,8 @@ import '@fortawesome/fontawesome-svg-core/styles.css' // Import the CSS
 config.autoAddCss = false // Tell Font Awesome to skip adding the CSS automatically since it's being imported above
 
 const AppLayout = props => {
-  iconLibrary();
-
+  iconLibrary()
+  Translator.registerDefaultLanguage("en", english)
   return(
     <ThemeProvider theme={theme}>
       <Global styles={globalStyle}/>

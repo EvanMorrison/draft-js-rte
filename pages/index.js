@@ -30,13 +30,14 @@ const Home = () => {
               minHeight={150}
               height={250}
               maxHeight={600}
+              placeholder="Enter your content here"
               toolbar={['withImages']}
               tooltipOrientation="bottom"
               onChange={forceUpdate}
             />
-            <h2 css={{marginTop: 30, marginBottom: 0}}>
-              Preview of Editor Output
-            </h2>
+            <h4 css={{marginTop: 30, marginBottom: 0}}>
+              Output Preview
+            </h4>
             <div css={{width: "100%", padding: 12, border: "1px solid #000", minHeight: 250}}>
               <div dangerouslySetInnerHTML={{__html: formLinker.current.data.editor}}></div>
             </div>

@@ -3,7 +3,7 @@ import { clone } from "lodash";
 
 export default class{
   constructor(value) {
-    this.color = HexRgb(clone(value));
+    this.color = HexRgb(clone(value), {format: "array"}).slice(0, 3);
   }
 
   changeHue(hue) {

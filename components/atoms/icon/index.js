@@ -1,4 +1,3 @@
-import Icons from "./icons";
 import PropTypes from "prop-types";
 import React from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -20,14 +19,6 @@ class Icon extends React.Component {
   }
 
   render() {
-    if(["applicant-pending", "applicant-ready", "batch-order", "draft-icon", "new-order", "revert-color", "xml-ready"].indexOf(this.props.name) !== -1) {
-      return(
-        <svg viewBox="0 0 1024 1024" className={"icon-" + this.props.name} onClick={() => this.props.onClick()}>
-          <path d={Icons[this.props.name]}/>
-        </svg>
-      );
-    }
-
     let props = {
       border: this.props.border,
       color: this.props.color,

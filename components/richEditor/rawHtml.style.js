@@ -15,7 +15,7 @@ export default styled.div`
           padding: 4px 6px;
           cursor: pointer;
           border-radius: 2px;
-          background: rgba(${props => HexRgb(props.theme.colors.textOnPageBackground).join()}, 0.2);
+          background: rgba(${props => HexRgb(props.theme.colors.textOnPageBackground, {format: "array"}).slice(0, 3).join()}, 0.2);
 
           svg {
             height: 18px;
