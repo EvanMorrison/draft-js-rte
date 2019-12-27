@@ -824,10 +824,7 @@ const RichEditor = React.forwardRef((props, ref) => {
 
   const renderToolbar = () => {
     if(props.toolbar === "none" || (isArray(props.toolbar) && props.toolbar[0] === "none")) {
-      return(
-        (!props.noScrollMessage && hasScrolling) &&
-        <ScrollMessage/>
-      );
+      return(null);
     } else {
       const selection = editorState.getSelection();
       const block = editorState.getCurrentContent().getBlockForKey(selection.getStartKey());

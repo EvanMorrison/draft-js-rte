@@ -14,7 +14,7 @@ import { availableControls, controlSets } from "../utils/constants";
 
 const Controls = props => {
   const renderControls = () => {
-    const controls = (props.toolbar === undefined) ? ["default", "scrollMessage"] : [...props.toolbar, "scrollMessage"];
+    const controls = (props.toolbar === undefined) ? ["default"] : [...props.toolbar];
     return(renderControlGroups(controls));
   };
 

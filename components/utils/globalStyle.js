@@ -21,29 +21,12 @@ const globalStyle = theme => css`
     box-sizing: border-box;
   }
 
-  #content-section {
-    max-width: initial;
-
-    .container {
-      margin: 0px auto;
-    }
+  p {
+    margin: 15px 0;
   }
 
-  #common-area, #common-area-fluid, #editor-area, #form-main {
-    margin: 0 auto;
-    max-width: 1200px;
-    padding-top: 20px;
-    width: 100%;
-  }
-
-  #page-title {
-    margin: 1em auto;
-    max-width: 1200px;
-  }
-
-  #profile-form {
-    margin: 0 auto;
-    max-width: 1200px;
+  p ~ ul {
+    margin: -15px 0 0 30px;
   }
 
   .list-options, .list-table, table.fixed {
