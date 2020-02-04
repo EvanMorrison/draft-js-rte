@@ -5,7 +5,7 @@
       {
         "preset-env": {
           "targets": {
-            "browsers": ["defaults", "not ie < 12", "not safari < 9", "not android < 5"]
+            "node": "current"
           },
           "useBuiltIns": "entry",
           "corejs": 3

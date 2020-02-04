@@ -5,7 +5,7 @@ var withCSS = require('@zeit/next-css')
 
 module.exports = withCSS(
   withMDX({
-    webpack: async (config, options) => {
+    webpack: (config, options) => {
       config.module.rules.push({
         test: /\.(ico|svg|png|gif|jpe?g)$/,
         exclude: /node_modules/,
