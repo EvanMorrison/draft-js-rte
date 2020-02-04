@@ -3,7 +3,13 @@
     [
       "next/babel",
       {
-        "preset-env": {},
+        "preset-env": {
+          "targets": {
+            "browsers": ["defaults", "not ie < 12", "not safari < 9", "not android < 5"]
+          },
+          "useBuiltIns": "entry",
+          "corejs": 3
+        },
         "preset-react": {},
         "transform-runtime": {},
         "plugin-proposal-class-properties": {}
