@@ -5,9 +5,9 @@
       {
         "preset-env": {
           "targets": {
-            "node": "10.18.1"
+            "node": "current"
           },
-          "useBuiltIns": "entry",
+          "useBuiltIns": "usage",
           "corejs": 3
         },
         "preset-react": {},
