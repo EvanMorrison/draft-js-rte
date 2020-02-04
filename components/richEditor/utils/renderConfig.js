@@ -444,7 +444,7 @@ export const getStateToHtmlOptions = (contentState) => ({
         styles.push(`${k}: ${v}`);
       }
     });
-    if(type === "blockquote") styles.push("color: #999999; font-family: 'Hoefler Text', Georgia, serif; font-style: italic; line-height: 1.15em; border-left: 5px solid rgba(100, 100, 100, 0.5); margin: 0 2em; padding-left: 1em;");
+    if(type === "blockquote") styles.push("color: #999999; font-family: 'Hoefler Text', Georgia, serif; font-style: italic; line-height: 1.15em; border: none; border-left: 5px solid rgba(100, 100, 100, 0.5); margin: 0 2em; padding-left: 1em;");
     if(type === "code-block") styles.push("font-size:1em");
     if(classes.length) attributes["class"] = classes.join(" ");
     if(styles.length) attributes["style"] = styles.join(";");

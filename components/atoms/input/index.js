@@ -43,6 +43,7 @@ const Input = props => {
   let inputProps = {
     disabled: props.disabled,
     hidden: props.type === "hidden",
+    id: props.name,
     maxLength: props.maxLength,
     name: props.name,
     onBlur: () => blur(),
@@ -63,19 +64,6 @@ const Input = props => {
 Input.componentDescription = "Form input element. Used for all form inputs.";
 Input.componentKey = "Form field input";
 Input.componentName = "Form field input";
-
-Input.propDescriptions = {
-  formLinker: "Form linker instance.",
-  label: "Label text.",
-  maxLength: "Max number of characters allowed in the input",
-  name: "Used as a unique identifier for this input in its form. Duplicate names can be used as long as they are in seperate forms.",
-  onBlur: "Callback function when input is blurred.",
-  onChange: "Callback function when input is changed.",
-  onFocus: "Callback function when input is focused.",
-  size: "Size of input. Options are \"lg\", \"md\", and \"sm\".",
-  type: "Type of input. Options are \"currency\", \"creditCard\", \"date\", \"email\", \"number\", \"percent\", \"phone\", \"ssn\", \"ssnLast4\", \"string\".",
-  _update: "Private callback function to rerender parent on input change, focus, or blur."
-};
 
 Input.propTypes = {
   disabled: PropTypes.bool,

@@ -32,6 +32,7 @@
     "react-dropzone": "^10.2.1",
     "react-onclickoutside": "^6.9.0",
     "rgb-hex": "^3.0.0",
-    "simple-translator": "^0.2.2"
+    "simple-translator": "^0.2.2",
+    "use-onclickoutside": "^0.3.1"
   }
 }

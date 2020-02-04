@@ -1,5 +1,6 @@
 import styled from "@emotion/styled";
-import HexRgb from "hex-rgb";
+import hexRgb from "hex-rgb";
+import { richEditorDropdown } from "./toolbar/richEditorDropdown/dropdown.style";
 
 export default styled.div`
   &.rich-text-toolbar {
@@ -20,25 +21,27 @@ export default styled.div`
       min-height: 50px;
       padding: 3px 6px;
       margin: 0;
-      background: ${props => props.theme.colors.pageBackground};
+      background: rgba(${props => hexRgb(props.theme.colors.blockSectionHeader, {format: "array"}).slice(0, 3).join()}, 0.2);
       border: 1px solid ${props => props.theme.colors.richTextBorder};
-      border-bottom: 1px solid transparent;
+      border-bottom: none;
       border-radius: 3px 3px 0 0;
       user-select: none;
 
-      .control-row {
+      .control-group {
         padding: 3px 0;
+        flex: 1 0 100%;
       }
 
-      .control-group {
+      .control-row {
         flex: 1;
         display: flex;
         justify-content: flex-start;
         align-items: center;
         flex-flow: row wrap;
+        ${props => richEditorDropdown(props)};
 
         .rich-editor-style-button {
-          color: rgba(${props => HexRgb(props.theme.colors.textOnPageBackground, {format: "array"}).slice(0, 3).join()}, 0.75);
+          color: rgba(${props => hexRgb(props.theme.colors.textOnPageBackground, {format: "array"}).slice(0, 3).join()}, 0.75);
           cursor: pointer;
           display: inline-block;
           margin: 3px 0;
@@ -60,9 +63,9 @@ export default styled.div`
 
         .rich-editor-active-button {
           color: ${props => props.theme.colors.textOnPageBackground};
-          border: 1px solid rgba(${props => HexRgb(props.theme.colors.textOnPageBackground, {format: "array"}).slice(0, 3).join()}, 0.4);
-          background: rgba(${props => HexRgb(props.theme.colors.textOnPageBackground, {format: "array"}).slice(0, 3).join()}, 0.1);
-          box-shadow: inset 0 0 4px rgba(${props => HexRgb(props.theme.colors.textOnPageBackground, {format: "array"}).slice(0, 3).join()}, 0.3);
+          border: 1px solid rgba(${props => hexRgb(props.theme.colors.textOnPageBackground, {format: "array"}).slice(0, 3).join()}, 0.4);
+          background: rgba(${props => hexRgb(props.theme.colors.textOnPageBackground, {format: "array"}).slice(0, 3).join()}, 0.1);
+          box-shadow: inset 0 0 4px rgba(${props => hexRgb(props.theme.colors.textOnPageBackground, {format: "array"}).slice(0, 3).join()}, 0.3);
 
           svg {
             fill: currentColor;

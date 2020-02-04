@@ -9,19 +9,28 @@ import React from "react";
 import ScrollMessage from "./scrollMessage";
 import TableGrid from "./tableGrid";
 import Translator from "simple-translator";
-import { FlexGrid, FlexItem } from "flex-item";
 import { availableControls, controlSets } from "../utils/constants";
+import { isNil } from "lodash";
 
 const Controls = props => {
   const renderControls = () => {
-    const controls = (props.toolbar === undefined) ? ["default"] : [...props.toolbar];
+    let controls = isNil(props.toolbar) ? ["default", "scrollMessage"] : [...props.toolbar, "scrollMessage"];
+    controls = expandControlSets(controls);
     return(renderControlGroups(controls));
+  };
+
+  const expandControlSets = controls => {
+    return(controls.flatMap(entry => {
+      if(Array.isArray(entry) && controlSets[entry]) {
+        return([controlSets[entry]]);
+      }
+      return(controlSets[entry] || [entry]);
+    }));
   };
 
   const renderControlGroups = (controls, id) => {
     let results = controls.map((controlName, index) => {
-      controlName = controlSets[controlName] || controlName;
-      if(Array.isArray(controlName)) { return(<FlexGrid className="control-row" key={index}>{renderControlGroups(controlName, index)}</FlexGrid>); }
+      if(Array.isArray(controlName)) { return(<div className="control-group" key={index}>{renderControlGroups(controlName, index)}</div>); }
       if(availableControls[controlName]) { return(controlRenderFunctions[availableControls[controlName].method](controlName, index)); }
       if(controlName === "scrollMessage") { return((!props.noScrollMessage && props.hasScrolling) && <ScrollMessage key={"scroll-message"}/>); }
       const {customControls} = props;
@@ -29,13 +38,13 @@ const Controls = props => {
       if(customControls && customControls[controlName]) { return(customListDropdown(controlName, props.customControls[controlName])); }
       return(null);
     });
-    return(<FlexItem key={id} className="control-group">{results}</FlexItem>);
+    return(<div key={id} className="control-row">{results}</div>);
   };
 
   const customListDropdown = (controlName, controlData) => {
     const customListProps = {
       activeOption: controlData,
-      editorName: props.editorName,
+      editor: props.editor,
       key: controlName,
       list: controlData.availableItems,
       ...controlData.dimensions,
@@ -55,7 +64,7 @@ const Controls = props => {
         activeOption: availableControls[controlName].activeOption(current),
         controlWidth: availableControls[controlName].controlWidth,
         dropdownWidth: availableControls[controlName].dropdownWidth,
-        editorName: props.editorName,
+        editor: props.editor,
         key: controlName,
         list: availableControls[controlName].list,
         onSelect: selection => props[controlName + "Select"](selection)
@@ -73,7 +82,7 @@ const Controls = props => {
         allowInput: true,
         controlWidth: availableControls[controlName].controlWidth,
         dropdownWidth: availableControls[controlName].dropdownWidth,
-        editorName: props.editorName,
+        editor: props.editor,
         editorState: props.editorState,
         key: controlName,
         onSelect: item => props[controlName](item)
@@ -90,7 +99,7 @@ const Controls = props => {
         activeOption: availableControls[controlName].activeOption(),
         controlWidth: availableControls[controlName].controlWidth,
         dropdownWidth: availableControls[controlName].dropdownWidth,
-        editorName: props.editorName,
+        editor: props.editor,
         key: controlName,
         onSelect: size => props[controlName](size)
       };
@@ -127,9 +136,9 @@ const Controls = props => {
   };
 
   return(
-    <FlexGrid className="editor-controls">
+    <div className="editor-controls">
       {renderControls()}
-    </FlexGrid>
+    </div>
   );
 };
 

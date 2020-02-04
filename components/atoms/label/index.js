@@ -46,18 +46,11 @@ Label.componentDescription = "Badge for emphasising important numbers.";
 Label.componentKey = "label";
 Label.componentName = "Form field label";
 
-Label.propDescriptions = {
-  errors: "Error message text.",
-  label: "Label message text.",
-  onClick: "Callback function when clicked.",
-  required: "Boolean of whether this field is required for valid form submission."
-};
-
 Label.propTypes = {
   disabled: PropTypes.bool,
   errors: PropTypes.array,
   onClick: PropTypes.func,
-  label: PropTypes.string,
+  label: PropTypes.node,
   required: PropTypes.bool
 };
 

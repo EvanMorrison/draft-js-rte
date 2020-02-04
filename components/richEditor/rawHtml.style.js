@@ -1,5 +1,5 @@
 import styled from "@emotion/styled";
-import HexRgb from "hex-rgb";
+import hexRgb from "hex-rgb";
 
 export default styled.div`
   &.raw-html {
@@ -15,7 +15,7 @@ export default styled.div`
           padding: 4px 6px;
           cursor: pointer;
           border-radius: 2px;
-          background: rgba(${props => HexRgb(props.theme.colors.textOnPageBackground, {format: "array"}).slice(0, 3).join()}, 0.2);
+          background: rgba(${props => hexRgb(props.theme.colors.textOnPageBackground, {format: "array"}).slice(0, 3).join()}, 0.2);
 
           svg {
             height: 18px;
@@ -29,6 +29,7 @@ export default styled.div`
     textarea {
       border-top-left-radius: 0;
       border-top-right-radius: 0;
+      border-top: none;
       font-family: "menlo", monospace, sans-serif;
     }
   }

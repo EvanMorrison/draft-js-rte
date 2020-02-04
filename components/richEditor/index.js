@@ -122,6 +122,19 @@ const RichEditor = React.forwardRef((props, ref) => {
     }
   };
 
+  const handleDrop = (selection, data, isInternal) => {
+    // when dropping text into a table cell only allow plain text
+    // to be inserted or the table will become corrupted
+    const text = data.data.getData("text");
+    let content = editorState.getCurrentContent();
+    let block = content.getBlockForKey(selection.getStartKey());
+    if(block.getType() === "table") {
+      content = Modifier.insertText(content, selection, text);
+      onChange(EditorState.push(editorState, content, "insert-characters"));
+      return(true);
+    }
+  };
+
   const handleKeyCommand = (command, newEditorState) => {
     switch(command) {
       case "backspace":
@@ -152,6 +165,9 @@ const RichEditor = React.forwardRef((props, ref) => {
           onChange(EditorState.push(newEditorState, contentState, "backspace-character"));
           return("handled");
         } else if(currentBlockType === "table" && collapsed && offset === 0) {
+          return("handled");
+        } else if(currentBlockType !== "table" && blockBefore?.getType() === "table" && offset === 0) {
+          handleTabInTable("previous", true);
           return("handled");
         } else if(!collapsed) {
           return(handleKeypressWhenSelectionNotCollapsed(newEditorState));
@@ -198,31 +214,44 @@ const RichEditor = React.forwardRef((props, ref) => {
   const handleKeypressWhenSelectionNotCollapsed = (newEditorState = editorState, chars = "") => {
     let selection = newEditorState.getSelection();
     let content = newEditorState.getCurrentContent();
-    const startKey = selection.getStartKey();
+    let startKey = selection.getStartKey();
     const startBlock = content.getBlockForKey(startKey);
     const endKey = selection.getEndKey();
     const endBlock = content.getBlockForKey(endKey);
+    const prevBlock = content.getBlockBefore(startKey);
+    const nextBlock = content.getBlockAfter(endKey);
     // when selection includes part of a table, clear the table
     // cell contents but don't delete the cells themselves
     if([startBlock.getType(), endBlock.getType()].includes("table")) {
+      const allCells = prevBlock?.getType() !== "table" && nextBlock?.getType() !== "table";
       let blockMap = content.getBlockMap();
-      const nextBlock = content.getBlockAfter(endKey);
       let startOffset = selection.getStartOffset();
       let endOffset = selection.getEndOffset();
-      let blocks = blockMap
-        .toSeq()
-        .skipUntil(v => v === startBlock)
-        .takeUntil(v => v === nextBlock) // take up to but not including nextBlock
-        .map(block => {
-          if(block === startBlock) {
-            return(block.set("text", block.getText().slice(0, startOffset) + chars));
-          }
-          if(block === endBlock) {
-            return(block.set("text", block.getText().slice(endOffset, block.getLength()) || " "));
-          }
-          return(block.set("text", " "));
-        });
-      blockMap = blockMap.merge(blocks);
+      // all table content selected, delete the table
+      if(allCells && startOffset === 0 && endOffset === endBlock.getLength()) {
+        let selectedBlocks = blockMap
+          .toSeq()
+          .skipUntil(v => v === startBlock)
+          .takeUntil(v => v === nextBlock);
+        blockMap = blockMap.filter(block => !selectedBlocks.includes(block));
+        startKey = prevBlock?.getKey() ?? nextBlock?.getKey();
+      } else {
+        // some table content selected, delete content only, not the table or cells
+        let blocks = blockMap
+          .toSeq()
+          .skipUntil(v => v === startBlock)
+          .takeUntil(v => v === nextBlock) // take up to but not including nextBlock
+          .map(block => {
+            if(block === startBlock) {
+              return(block.set("text", block.getText().slice(0, startOffset) + chars));
+            }
+            if(block === endBlock) {
+              return(block.set("text", block.getText().slice(endOffset, block.getLength()) || " "));
+            }
+            return(block.set("text", " "));
+          });
+        blockMap = blockMap.merge(blocks);
+      }
       // create a new collapsed selection positioned where the former selection started
       selection = SelectionState.createEmpty(startKey);
       selection = selection.merge({
@@ -240,6 +269,19 @@ const RichEditor = React.forwardRef((props, ref) => {
     return("not-handled");
   };
 
+  const handlePastedText = (text, html, editorState) => {
+    // when pasting into a table cell only allow plain text
+    // to be inserted or the table will become corrupted
+    let content = editorState.getCurrentContent();
+    let selection = editorState.getSelection();
+    let block = content.getBlockForKey(selection.getStartKey());
+    if(block.getType() === "table") {
+      content = Modifier.insertText(content, selection, text);
+      onChange(EditorState.push(editorState, content, "insert-characters"));
+      return(true);
+    }
+  };
+
   const handleReturn = (e, editorState) => {
     if(e.shiftKey) {
       let newEditorState = RichUtils.insertSoftNewline(editorState);
@@ -254,7 +296,7 @@ const RichEditor = React.forwardRef((props, ref) => {
     return("not-handled");
   };
 
-  const handleTabInTable = (direction = "next") => {
+  const handleTabInTable = (direction = "next", collapsed = false) => {
     let selection = editorState.getSelection();
     let contentState = editorState.getCurrentContent();
     let targetKey = selection.getAnchorKey();
@@ -270,7 +312,7 @@ const RichEditor = React.forwardRef((props, ref) => {
     if(!targetBlock) {
       targetBlock = contentState.getBlockForKey(selection.getAnchorKey());
     }
-    const isTargetTable = targetBlock.getType() === "table";
+    const isTargetTable = targetBlock.getType() === "table" && !collapsed;
     let endOffset = targetBlock.getLength();
     selection = SelectionState.createEmpty(targetBlock.getKey());
     selection = selection.merge({
@@ -411,23 +453,29 @@ const RichEditor = React.forwardRef((props, ref) => {
       });
     });
     const selectionKey = selection.getAnchorKey();
-    const selectionOffset = selection.getAnchorOffset();
     let contentState = editorState.getCurrentContent();
-    let currBlock = contentState.getBlockForKey(selectionKey);
-    if(selectionOffset > 0 && selectionOffset < currBlock.getLength()) {
-      contentState = Modifier.splitBlock(contentState, selection);
-    }
+    contentState = Modifier.splitBlock(contentState, selection);
     const blockArray = contentState.getBlocksAsArray();
-    currBlock = contentState.getBlockForKey(selectionKey);
+    const currBlock = contentState.getBlockForKey(selectionKey);
     const index = blockArray.findIndex(block => block === currBlock);
     const isEnd = index === blockArray.length - 1;
+    if(blockArray[index]?.getType() === "table") {
+      newBlocks.unshift(new ContentBlock({key: genKey()}));
+    }
+    if(blockArray[index + 1]?.getType() === "table") {
+      newBlocks.push(new ContentBlock({key: genKey()}));
+    }
     blockArray.splice(index + 1, 0, ...newBlocks);
     if(isEnd) {
       blockArray.push(new ContentBlock({key: genKey()}));
     }
     const entityMap = contentState.getEntityMap();
     contentState = ContentState.createFromBlockArray(blockArray, entityMap);
-    onChange(EditorState.set(editorState, {currentContent: contentState, selection}));
+    let newEditorState = EditorState.push(editorState, contentState, "insert-fragment");
+    const key = newBlocks[0].getKey();
+    selection = SelectionState.createEmpty(key);
+    newEditorState = EditorState.acceptSelection(newEditorState, selection);
+    onChange(newEditorState);
   };
 
   const mapKeyToEditorCommand = e => {
@@ -559,6 +607,11 @@ const RichEditor = React.forwardRef((props, ref) => {
       setIsImageActive(false);
     }
   }, [props.disabled, editorState, onChange]);
+
+  const onBlur = () => {
+    setActiveStyles({});
+    props.onBlur();
+  };
 
   const removeSizeDataFromBlock = (newEditorState, block) => {
     let data = block.getData().delete("height").delete("width");
@@ -703,6 +756,18 @@ const RichEditor = React.forwardRef((props, ref) => {
     onChange(newEditorState);
   };
 
+  const setSelectionIfNone = currentEditorState => {
+    let selection = currentEditorState.getSelection();
+    if(!selection.getHasFocus()) {
+      const content = currentEditorState.getCurrentContent();
+      const firstBlock = content.getFirstBlock();
+      const key = firstBlock.getKey();
+      selection = SelectionState.createEmpty(key);
+      return(EditorState.forceSelection(currentEditorState, selection));
+    }
+    return(currentEditorState);
+  };
+
   const supplementalCustomBlockStyleFn = (newEditorState) => {
     const contentState = newEditorState.getCurrentContent();
     const selectionState = newEditorState.getSelection();
@@ -778,15 +843,15 @@ const RichEditor = React.forwardRef((props, ref) => {
   }, [richMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const toggleInlineStyle = (inlineStyle) => {
+    let newEditorState = setSelectionIfNone(editorState);
     // if the new style is a compound style type (fontFamily, fontSize, color, or backgroundColor) and the current style includes the same type,
     // remove the current matching style type before turning on the new style.
-    const existingMatch = editorState.getCurrentInlineStyle() // getCurrentInlineStyle() returns an Immutable OrderedSet
+    const existingMatch = newEditorState.getCurrentInlineStyle() // getCurrentInlineStyle() returns an Immutable OrderedSet
       .filter(style => style.includes(".") && style.split(".")[0] === inlineStyle.split(".")[0]) // compound styles are dot-delimited e.g. fontFamily.Arial
       .toList()
       .get(0);
-    let newEditorState = editorState;
     if(existingMatch) {
-      newEditorState = RichUtils.toggleInlineStyle(editorState, existingMatch);
+      newEditorState = RichUtils.toggleInlineStyle(newEditorState, existingMatch);
     }
     if(inlineStyle.endsWith("unset")) {
       onChange(newEditorState);
@@ -822,9 +887,14 @@ const RichEditor = React.forwardRef((props, ref) => {
     }
   }, [props.disabled]);
 
+  const noToolbar = props.toolbar === "none" || (isArray(props.toolbar) && props.toolbar[0] === "none");
+
   const renderToolbar = () => {
-    if(props.toolbar === "none" || (isArray(props.toolbar) && props.toolbar[0] === "none")) {
-      return(null);
+    if(noToolbar) {
+      return(
+        (!props.noScrollMessage && hasScrolling) &&
+        <ScrollMessage/>
+      );
     } else {
       const selection = editorState.getSelection();
       const block = editorState.getCurrentContent().getBlockForKey(selection.getStartKey());
@@ -832,8 +902,8 @@ const RichEditor = React.forwardRef((props, ref) => {
         activeStyles: activeStyles,
         blockType: block.getType(),
         blockData: block.getData(),
-        currentStyle: editorState.getCurrentInlineStyle(),
-        editorName: props.name,
+        currentStyle: editorState.getSelection().getHasFocus() && editorState.getCurrentInlineStyle(),
+        editor: editor,
         editorState: editorState,
         openLinkForm: editLink,
         hasScrolling: hasScrolling,
@@ -860,11 +930,11 @@ const RichEditor = React.forwardRef((props, ref) => {
   if(richMode) {
     return(
       <div id={props.name}>
-        <ToolbarStyle className="rich-text-toolbar">
+        <ToolbarStyle className="rich-text-toolbar" maxDropdownHeight={Math.max((editorDOMRef.current?.getBoundingClientRect().height || 150), 470)}>
           {props.disabled && <div className="disabled-toolbar"></div>}
           {renderToolbar()}
         </ToolbarStyle>
-        <EditorStyle className="rich-text-editor" onClick={setFocusToEnd} style={{height: height + "px", minHeight: props.minHeight + "px", maxHeight: props.maxHeight + "px"}}>
+        <EditorStyle className={`rich-text-editor${noToolbar ? " no-toolbar" : ""}`} onClick={setFocusToEnd} style={{height: height + "px", minHeight: props.minHeight + "px", maxHeight: props.maxHeight + "px"}}>
           <DraftStyles>
             <Editor
               ref={editor}
@@ -876,12 +946,14 @@ const RichEditor = React.forwardRef((props, ref) => {
               customStyleFn={customStyleFn}
               blockStyleFn={(contentBlock) => blockStyle(contentBlock)}
               handleBeforeInput={(chars, editorState) => handleBeforeInput(chars, editorState)}
+              handleDrop={(selection, data, isInternal) => handleDrop(selection, data, isInternal)}
               handleKeyCommand={(command, editorState) => handleKeyCommand(command, editorState)}
+              handlePastedText={(text, html, editorState) => handlePastedText(text, html, editorState)}
               handleReturn={(e, editorState) => handleReturn(e, editorState)}
               keyBindingFn={(e) => mapKeyToEditorCommand(e)}
               onChange={(editorState) => onChange(editorState)}
               onFocus={() => props.onFocus()}
-              onBlur={() => props.onBlur()}
+              onBlur={onBlur}
               readOnly={props.disabled}
             />
           </DraftStyles>
@@ -906,22 +978,6 @@ const RichEditor = React.forwardRef((props, ref) => {
 RichEditor.componentDescription = "Rich Text Editor";
 RichEditor.componentKey = "richEditor";
 RichEditor.componentName = "RichEditor";
-
-RichEditor.propDescriptions = {
-  customControls: "One or more custom lists of insertable text or symbols (eg. keywords or emojis). Properties are \"controlDisplay\", \"controlDimensions\", and \"availableItems\" ",
-  defaultStyles: "A list of default inline styles, e.g. [\"BOLD\", \"ITALIC\", \"UNDERLINE\", \"color.#FF0000\", \"fontSize.10\", \"fontFamily.Arial\"]",
-  formLinker: "Pointer to an instance of FormLinker. Provides and receives a string of html content for the editor.",
-  height: "Sets the initial height (in pixels) for the editor's input area.",
-  minHeight: "Sets the minimum height (in pixels) for the editor's input area.",
-  maxHeight: "Sets the maximum allowed height (in pixels) for the editor's input area.",
-  name: "The name for the editor component instance, used to reference the editor's data on formLinker.",
-  noScrollMessage: "If present, suppress showing the scroll message when content overflows the editor's container element",
-  placeholder: "Text to display when editor is empty.",
-  toolbar: "An array of strings containing the names of the controls to include in the toolbar. Set prop to [\"none\"] to use the editor without a toolbar, or [\"defaultControls\", <nameOfCustomControl1>, ...] if using the customControls prop. Use \"spacer\" one or more times to add some space between groups of controls.",
-  tooltipOrientation: "Top, bottom, left or right tooltip alignment.",
-  onChange: "Callback function to execute on changes in editor content.",
-  setRef: "Create a ref to the editor component. Required if access to the editor's reset method is needed for the purpose of resetting/replacing the editor content after the component has mounted."
-};
 
 RichEditor.propTypes = {
   /** One or more custom lists of insertable text or symbols (eg. keywords or emojis). Properties are "controlDisplay", "controlDimensions", and "availableItems". */

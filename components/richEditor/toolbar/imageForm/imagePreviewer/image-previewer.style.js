@@ -6,7 +6,6 @@ export default styled.div`
   flex-flow: row wrap;
   justify-content: space-evenly;
   margin: 15px 0;
-  text-align: center;
 
   .mobile-dropzone {
     display: none;
@@ -29,6 +28,7 @@ export default styled.div`
       height: 75px;
       width: 100%;
       background: transparent;
+      background: linear-gradient(transparent, ${props => props.theme.colors.pageBackground});
     }
 
     .icon-cloud {
@@ -63,6 +63,7 @@ export default styled.div`
   @media (max-width: ${props => props.theme.dimensions.desktopBreakpoint}px) {
     .mobile-dropzone {
       display: block;
+      white-space: normal;
       color: rgba(${props => hexRgb(props.theme.colors.primary, {format: "array"}).slice(0, 3).join()}, 0.5);
       font-style: italic;
     }

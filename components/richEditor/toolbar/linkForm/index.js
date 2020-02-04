@@ -1,7 +1,7 @@
 import Button from "../../../atoms/button";
-// import Formatters from "../../../../utils/formatters";
+// import Formatters from "../../../utils/formatters";
 import FormLinker from "form-linker";
-// import Masks from "../../../../utils/masks";
+// import Masks from "../../../utils/masks";
 import React, { useEffect, useReducer, useRef } from "react";
 import Styled from "./linkForm.style";
 import { isEmpty } from "lodash";
