@@ -20,15 +20,6 @@ const Controls = props => {
   };
 
   const expandControlSets = controls => {
-    return controls.flatMap(entry => {
-      if (Array.isArray(entry) && controlSets[entry]) {
-        return [controlSets[entry]];
-      }
-      return controlSets[entry] || [entry];
-    });
-  };
-
-  const expandControlSets = controls => {
     return(controls.flatMap(entry => {
       if(Array.isArray(entry) && controlSets[entry]) {
         return([controlSets[entry]]);

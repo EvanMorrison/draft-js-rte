@@ -151,19 +151,6 @@ const RichEditor = React.forwardRef((props, ref) => {
   const handleDrop = (selection, data, isInternal) => {
     // when dropping text into a table cell only allow plain text
     // to be inserted or the table will become corrupted
-    const text = data.data.getData('text');
-    let content = editorState.getCurrentContent();
-    const block = content.getBlockForKey(selection.getStartKey());
-    if (block.getType() === 'table') {
-      content = Modifier.insertText(content, selection, text);
-      onChange(EditorState.push(editorState, content, 'insert-characters'));
-      return true;
-    }
-  };
-
-  const handleDrop = (selection, data, isInternal) => {
-    // when dropping text into a table cell only allow plain text
-    // to be inserted or the table will become corrupted
     const text = data.data.getData("text");
     let content = editorState.getCurrentContent();
     let block = content.getBlockForKey(selection.getStartKey());
@@ -433,19 +420,6 @@ const RichEditor = React.forwardRef((props, ref) => {
     newEditorState = EditorState.forceSelection(newEditorState, selection);
     onChange(newEditorState);
     return 'handled';
-  };
-
-  const handlePastedText = (text, html, editorState) => {
-    // when pasting into a table cell only allow plain text
-    // to be inserted or the table will become corrupted
-    let content = editorState.getCurrentContent();
-    const selection = editorState.getSelection();
-    const block = content.getBlockForKey(selection.getStartKey());
-    if (block.getType() === 'table') {
-      content = Modifier.insertText(content, selection, text);
-      onChange(EditorState.push(editorState, content, 'insert-characters'));
-      return true;
-    }
   };
 
   const handlePastedText = (text, html, editorState) => {
