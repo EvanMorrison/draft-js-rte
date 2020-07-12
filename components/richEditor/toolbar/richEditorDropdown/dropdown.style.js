@@ -1,4 +1,4 @@
-import { css } from "@emotion/core";
+import { css } from '@emotion/core';
 
 export default props => css`
   .rich-text-toolbar .editor-controls .control-row &.dropdown-button {
@@ -52,11 +52,11 @@ export const richEditorDropdown = props => css`
     .dropdown {
       width: fit-content;
 
-      &[class*="left"] {
+      &[class*='left'] {
         left: 0;
       }
 
-      &[class*="right"] {
+      &[class*='right'] {
         right: 0;
       }
 

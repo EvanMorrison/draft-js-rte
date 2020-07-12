@@ -13,7 +13,7 @@ const ImagePreviewer = props => {
 
   const isOpen = useRef(props.isOpen);
   useEffect(() => {
-    if(isOpen.current && !props.isOpen) {
+    if (isOpen.current && !props.isOpen) {
       isOpen.current = false;
       setImage(null);
     }
@@ -37,7 +37,7 @@ const ImagePreviewer = props => {
 
   function readFile(file) {
     const FR = new FileReader();
-    FR.addEventListener("load", (e) => {
+    FR.addEventListener('load', e => {
       props.formLinker.setValue(props.name, file);
       setImage(e.target.result);
     });
@@ -45,41 +45,48 @@ const ImagePreviewer = props => {
   }
 
   function renderContent() {
-    if(image === null) {
-      return(renderDropzone());
+    if (image === null) {
+      return renderDropzone();
     } else {
-      return(
+      return (
         <React.Fragment>
           <FlexGrid>
             <FlexItem>
-              <ImagePreview src={image} previewWidth={"100%"} previewHeight={256}/>
+              <ImagePreview src={image} previewWidth={'100%'} previewHeight={256} />
             </FlexItem>
           </FlexGrid>
-          <Button block type="tertiary" onClick={clear}>Clear</Button>
+          <Button block type='tertiary' onClick={clear}>
+            Clear
+          </Button>
         </React.Fragment>
       );
     }
   }
 
   function renderDropzone() {
-    return(
+    return (
       <div>
-        <div className="mobile-dropzone">{Translator.translate("Citadel.organisms.richEditor.mobileError")}</div>
-        <Dropzone multiple={false} maxSize={5000000} accept={"image/*"} style={{}} className="dropzone" onDropAccepted={drop} onDropRejected={dropError}>
-          {({getRootProps, getInputProps}) => (
-            <div className="dropzone" {...getRootProps()}>
-              <input {...getInputProps()}/>
-              <div className="icon-overlay"/>
-              <Icon name="cloud-upload-alt-sld"/>
-              <h3 className="upload-logo-text">{Translator.translate("Citadel.organisms.richEditor.upload")}</h3>
-              <h3 className="upload-logo-text upload-sub">{Translator.translate("Citadel.organisms.richEditor.uploadSub")}</h3>
-              <h4 className="file-size-limit upload-logo-text">
-                {Translator.translate("Citadel.organisms.richEditor.maxFileSize")}
-                <br/>
-                <span className="lighter-text">{Translator.translate("Citadel.organisms.richEditor.imageFormats")}</span>
-              </h4>
-            </div>
-          )}
+        <div className='mobile-dropzone'>{Translator.translate('Citadel.organisms.richEditor.mobileError')}</div>
+        <Dropzone
+          multiple={false}
+          maxSize={5000000}
+          accept={'image/*'}
+          style={{}}
+          className='dropzone'
+          onDropAccepted={drop}
+          onDropRejected={dropError}
+        >
+          <div className='icon-overlay' />
+          <Icon name='cloud-upload-alt-sld' />
+          <h3 className='upload-logo-text'>{Translator.translate('Citadel.organisms.richEditor.upload')}</h3>
+          <h3 className='upload-logo-text upload-sub'>
+            {Translator.translate('Citadel.organisms.richEditor.uploadSub')}
+          </h3>
+          <h4 className='file-size-limit upload-logo-text'>
+            {Translator.translate('Citadel.organisms.richEditor.maxFileSize')}
+            <br />
+            <span className='lighter-text'>{Translator.translate('Citadel.organisms.richEditor.imageFormats')}</span>
+          </h4>
         </Dropzone>
         {renderError()}
       </div>
@@ -87,15 +94,13 @@ const ImagePreviewer = props => {
   }
 
   function renderError() {
-    if(!hasError) { return(<noscript/>); }
-    return(<div className="error">{Translator.translate("Citadel.organisms.richEditor.uploadFailed")}</div>);
+    if (!hasError) {
+      return <noscript />;
+    }
+    return <div className='error'>{Translator.translate('Citadel.organisms.richEditor.uploadFailed')}</div>;
   }
 
-  return(
-    <Style className="image-editor">
-      {renderContent()}
-    </Style>
-  );
+  return <Style className='image-editor'>{renderContent()}</Style>;
 };
 
 export default ImagePreviewer;

@@ -1,22 +1,22 @@
-import ColorList from "./colorList";
-import ControlButton from "./button";
-import Dropdown from "./richEditorDropdown";
-import Icon from "../../atoms/icon";
-import ImageForm from "./imageForm";
-import LinkForm from "./linkForm";
-import ListContent from "./basicList";
-import React from "react";
-import ScrollMessage from "./scrollMessage";
-import TableGrid from "./tableGrid";
-import Translator from "simple-translator";
-import { availableControls, controlSets } from "../utils/constants";
-import { isNil } from "lodash";
+import ColorList from './colorList';
+import ControlButton from './button';
+import Dropdown from './richEditorDropdown';
+import Icon from '../../atoms/icon';
+import ImageForm from './imageForm';
+import LinkForm from './linkForm';
+import ListContent from './basicList';
+import React from 'react';
+import ScrollMessage from './scrollMessage';
+import TableGrid from './tableGrid';
+import Translator from 'simple-translator';
+import { availableControls, controlSets } from '../utils/constants';
+import { isNil } from 'lodash';
 
 const Controls = props => {
   const renderControls = () => {
-    let controls = isNil(props.toolbar) ? ["default", "scrollMessage"] : [...props.toolbar, "scrollMessage"];
+    let controls = isNil(props.toolbar) ? ['default', 'scrollMessage'] : [...props.toolbar, 'scrollMessage'];
     controls = expandControlSets(controls);
-    return(renderControlGroups(controls));
+    return renderControlGroups(controls);
   };
 
   const expandControlSets = controls => {
@@ -29,16 +29,34 @@ const Controls = props => {
   };
 
   const renderControlGroups = (controls, id) => {
-    let results = controls.map((controlName, index) => {
-      if(Array.isArray(controlName)) { return(<div className="control-group" key={index}>{renderControlGroups(controlName, index)}</div>); }
-      if(availableControls[controlName]) { return(controlRenderFunctions[availableControls[controlName].method](controlName, index)); }
-      if(controlName === "scrollMessage") { return((!props.noScrollMessage && props.hasScrolling) && <ScrollMessage key={"scroll-message"}/>); }
-      const {customControls} = props;
-      if(React.isValidElement(customControls[controlName])) { return(React.cloneElement(customControls[controlName], {key: controlName})); }
-      if(customControls && customControls[controlName]) { return(customListDropdown(controlName, props.customControls[controlName])); }
-      return(null);
+    const results = controls.map((controlName, index) => {
+      if (Array.isArray(controlName)) {
+        return (
+          <div className='control-group' key={index}>
+            {renderControlGroups(controlName, index)}
+          </div>
+        );
+      }
+      if (availableControls[controlName]) {
+        return controlRenderFunctions[availableControls[controlName].method](controlName, index);
+      }
+      if (controlName === 'scrollMessage') {
+        return !props.noScrollMessage && props.hasScrolling && <ScrollMessage key={'scroll-message'} />;
+      }
+      const { customControls } = props;
+      if (React.isValidElement(customControls[controlName])) {
+        return React.cloneElement(customControls[controlName], { key: controlName });
+      }
+      if (customControls && customControls[controlName]) {
+        return customListDropdown(controlName, props.customControls[controlName]);
+      }
+      return null;
     });
-    return(<div key={id} className="control-row">{results}</div>);
+    return (
+      <div key={id} className='control-row'>
+        {results}
+      </div>
+    );
   };
 
   const customListDropdown = (controlName, controlData) => {
@@ -48,18 +66,26 @@ const Controls = props => {
       key: controlName,
       list: controlData.availableItems,
       ...controlData.dimensions,
-      onSelect: type => props.customListSelect(type)
+      onSelect: type => props.customListSelect(type),
     };
-    return(<Dropdown render={props => (<ListContent {...props}/>)} {...customListProps}/>);
+    return <Dropdown render={props => <ListContent {...props} />} {...customListProps} />;
   };
 
   const controlRenderFunctions = {
-    listDropdown: (controlName) => {
+    listDropdown: controlName => {
       let current;
-      if(controlName === "alignment") { current = props.blockData.get("text-align"); }
-      if(controlName === "blockType") { current = props.blockType; }
-      if(controlName === "fontFamily") { current = props.activeStyles.fontFamily || "--"; }
-      if(controlName === "fontSize") { current = props.activeStyles.fontSize || "--"; }
+      if (controlName === 'alignment') {
+        current = props.blockData.get('text-align');
+      }
+      if (controlName === 'blockType') {
+        current = props.blockType;
+      }
+      if (controlName === 'fontFamily') {
+        current = props.activeStyles.fontFamily || '--';
+      }
+      if (controlName === 'fontSize') {
+        current = props.activeStyles.fontSize || '--';
+      }
       const controlProps = {
         activeOption: availableControls[controlName].activeOption(current),
         controlWidth: availableControls[controlName].controlWidth,
@@ -67,16 +93,16 @@ const Controls = props => {
         editor: props.editor,
         key: controlName,
         list: availableControls[controlName].list,
-        onSelect: selection => props[controlName + "Select"](selection)
+        onSelect: selection => props[controlName + 'Select'](selection),
       };
-      if(controlName === "color") {
-        return(<Dropdown render={props => (<ColorList {...props}/>)} {...controlProps}/>);
+      if (controlName === 'color') {
+        return <Dropdown render={props => <ColorList {...props} />} {...controlProps} />;
       } else {
-        return(<Dropdown render={props => (<ListContent {...props}/>)} {...controlProps}/>);
+        return <Dropdown render={props => <ListContent {...props} />} {...controlProps} />;
       }
     },
 
-    formDropdown: (controlName) => {
+    formDropdown: controlName => {
       const controlProps = {
         activeOption: availableControls[controlName].activeOption(),
         allowInput: true,
@@ -85,61 +111,57 @@ const Controls = props => {
         editor: props.editor,
         editorState: props.editorState,
         key: controlName,
-        onSelect: item => props[controlName](item)
+        onSelect: item => props[controlName](item),
       };
-      if(controlName === "insertImage") {
-        return(<Dropdown render={props => (<ImageForm {...props}/>)} {...controlProps}/>);
+      if (controlName === 'insertImage') {
+        return <Dropdown render={props => <ImageForm {...props} />} {...controlProps} />;
       } else {
-        return(<Dropdown open={props.openLinkForm} render={props => (<LinkForm {...props}/>)} {...controlProps}/>);
+        return <Dropdown open={props.openLinkForm} render={props => <LinkForm {...props} />} {...controlProps} />;
       }
     },
 
-    tableDropdown: (controlName) => {
+    tableDropdown: controlName => {
       const controlProps = {
         activeOption: availableControls[controlName].activeOption(),
         controlWidth: availableControls[controlName].controlWidth,
         dropdownWidth: availableControls[controlName].dropdownWidth,
         editor: props.editor,
         key: controlName,
-        onSelect: size => props[controlName](size)
+        onSelect: size => props[controlName](size),
       };
-      return(<Dropdown render={props => (<TableGrid {...props}/>)} {...controlProps}/>);
+      return <Dropdown render={props => <TableGrid {...props} />} {...controlProps} />;
     },
 
-    controlButton: (controlName) => {
+    controlButton: controlName => {
       let active = props.currentStyle ? props.currentStyle.has(controlName.toUpperCase()) : null;
       let style = controlName.toUpperCase();
-      if(controlName === "floatRight") {
-        active = props.blockData.get("float") === "right";
-        style = {float: "right"};
+      if (controlName === 'floatRight') {
+        active = props.blockData.get('float') === 'right';
+        style = { float: 'right' };
       }
-      if(controlName === "bulletList" || controlName === "numberList") {
-        const blockType = controlName === "bulletList" ? "unordered-list-item" : "ordered-list-item";
+      if (controlName === 'bulletList' || controlName === 'numberList') {
+        const blockType = controlName === 'bulletList' ? 'unordered-list-item' : 'ordered-list-item';
         active = props.blockType === blockType;
       }
       const btnProps = {
         active,
         key: controlName,
-        label: <Icon name={availableControls[controlName].icon}/>,
+        label: <Icon name={availableControls[controlName].icon} />,
         onToggle: props[availableControls[controlName].callback],
         style,
-        tooltip: Translator.translate(availableControls[controlName].tooltip || ""),
-        tooltipOrientation: props.tooltipOrientation
+        tooltip: Translator.translate(availableControls[controlName].tooltip || ''),
+        tooltipOrientation: props.tooltipOrientation,
       };
 
-      return(<ControlButton {...btnProps}/>);
+      return <ControlButton {...btnProps} />;
     },
 
     spacer: (_, index) => {
-      return(<div className="spacer" key={"spacer" + index}></div>);
-    }
+      return <div className='spacer' key={'spacer' + index}></div>;
+    },
   };
 
-  return(
-    <div className="editor-controls">
-      {renderControls()}
-    </div>
-  );
+  return <div className='editor-controls'>{renderControls()}</div>;
 };
 
 export default Controls;

@@ -1,4 +1,4 @@
-import styled from "@emotion/styled";
+import styled from '@emotion/styled';
 
 const TextareaStyle = styled.textarea`
   &.textarea {
@@ -12,6 +12,7 @@ const TextareaStyle = styled.textarea`
     border-color: ${props => props.theme.colors.textareaBorder};
     background: ${props => props.theme.colors.pageBackground};
     font-size: 16px;
+    font-family: ${props => props.theme.fonts[0]};
 
     &:focus {
       border-color: ${props => props.theme.colors.info};

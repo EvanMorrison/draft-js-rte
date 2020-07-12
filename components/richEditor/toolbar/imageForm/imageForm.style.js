@@ -1,4 +1,4 @@
-import styled from "@emotion/styled";
+import styled from '@emotion/styled';
 
 export default styled.div`
   padding: 12px;
@@ -9,6 +9,10 @@ export default styled.div`
 
   .form-field {
     margin-bottom: 16px;
+
+    label.form-label div.label-content {
+      color: ${props => props.theme.colors.primary};
+    }
   }
 
   .image-editor {

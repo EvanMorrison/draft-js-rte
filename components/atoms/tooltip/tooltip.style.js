@@ -1,4 +1,4 @@
-import styled from "@emotion/styled";
+import styled from '@emotion/styled';
 
 export default styled.div`
   &.tooltip {
@@ -11,7 +11,7 @@ export default styled.div`
     background-color: ${props => props.theme.colors.pageBackground};
     color: ${props => props.theme.colors.textOnPageBackground};
     border: 2px solid ${props => props.theme.colors.border};
-    z-index: ${props => props.theme.zIndexes["dropDown"]};
+    z-index: ${props => props.theme.zIndexes.dropDown};
 
     .tooltip-content {
       padding: 6px 12px;
@@ -20,8 +20,9 @@ export default styled.div`
       width: max-content;
     }
 
-    &:before, &:after {
-      content: "";
+    &:before,
+    &:after {
+      content: '';
       position: absolute;
       width: 0;
       height: 0;

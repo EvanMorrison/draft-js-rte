@@ -24,17 +24,15 @@
     "draft-js-import-html": "^1.4.1",
     "emotion-theming": "^10.0.27",
     "flex-item": "^3.1.0",
-    "form-linker": "^1.0.9",
-    "hex-rgb": "^4.1.0",
+    "form-linker": "1.2.0",
     "lodash": "^4.17.15",
     "next": "9.1.6",
+    "off-color": "^2.0.0",
     "react": "16.12.0",
     "react-dom": "16.12.0",
-    "react-dropzone": "^10.2.1",
-    "react-onclickoutside": "^6.9.0",
-    "regenerator-runtime": "^0.13.3",
-    "rgb-hex": "^3.0.0",
-    "simple-translator": "^0.2.2",
+    "react-dropzone": "4.2.11",
+    "regenerator-runtime": "^0.13.5",
+    "simple-translator": "0.2.5",
     "use-onclickoutside": "^0.3.1"
   }
 }

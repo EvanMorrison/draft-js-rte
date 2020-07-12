@@ -1,10 +1,9 @@
-import styled from "@emotion/styled";
+import styled from '@emotion/styled';
 
 export default styled.input`
   &.input {
     width: 100%;
     height: 32px;
-    line-height: 32px;
     padding: 0 6px;
     border-radius: 5px;
     border: 1px solid ${props => props.theme.colors.inputBorder};
@@ -14,15 +13,13 @@ export default styled.input`
     font-size: 16px;
 
     &.size-lg {
-      height: 40px;
-      line-height: 40px;
-      font-size: 21px;
+      height: 36px;
+      font-size: 18px;
     }
 
     &.size-sm {
-      height: 24px;
-      line-height: 24px;
-      font-size: 12px;
+      height: 26px;
+      font-size: 14px;
     }
 
     &.currency {
@@ -56,7 +53,7 @@ export default styled.input`
       background: ${props => props.theme.colors.pageBackground};
     }
 
-    &[type=number] {
+    &[type='number'] {
       padding-right: 0;
     }
   }

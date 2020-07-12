@@ -1,5 +1,5 @@
-import styled from "@emotion/styled";
-import hexRgb from "hex-rgb";
+import styled from '@emotion/styled';
+import { offColor as colorHelper } from 'off-color';
 
 export default styled.div`
   &.raw-html {
@@ -15,7 +15,7 @@ export default styled.div`
           padding: 4px 6px;
           cursor: pointer;
           border-radius: 2px;
-          background: rgba(${props => hexRgb(props.theme.colors.textOnPageBackground, {format: "array"}).slice(0, 3).join()}, 0.2);
+          background: ${props => colorHelper(props.theme.colors.textOnPageBackground).rgba(0.2)};
 
           svg {
             height: 18px;
@@ -30,7 +30,7 @@ export default styled.div`
       border-top-left-radius: 0;
       border-top-right-radius: 0;
       border-top: none;
-      font-family: "menlo", monospace, sans-serif;
+      font-family: 'menlo', monospace, sans-serif;
     }
   }
 `;

@@ -1,90 +1,79 @@
-import PropTypes from "prop-types";
-import React from "react";
-import Style from "./input.style";
-import { isEmpty, isNil } from "lodash";
-import { ClassNames } from "@emotion/core";
+import PropTypes from 'prop-types';
+import React from 'react';
+import Style from './input.style';
 
-const Input = props => {
+const Input = React.forwardRef((props, ref) => {
   function blur() {
-    props.formLinker.validate(props.name);
-    props._update();
     props.onBlur();
   }
 
   function change(e) {
-    props.formLinker.setValue(props.name, e.target.value);
-    props._update();
-    props.onChange();
+    props.onChange(e.target.value);
   }
 
   function focus() {
-    props.formLinker.setError(props.name, []);
-    props._update();
     props.onFocus();
   }
 
   function type() {
-    let type = "text";
-    if(props.type === "password") {
-      type = "password";
-    } else if(props.type === "number" || props.type === "rgb") {
-      type = "number";
+    if (['number', 'password', 'hidden'].includes(props.type)) {
+      return props.type;
+    } else {
+      return 'text';
     }
-    return(type);
   }
 
-  let classes = {
-    "size-sm": props.size === "sm",
-    "size-lg": props.size === "lg",
-    "error": !isEmpty(props.formLinker.getError(props.name)),
-    "currency": props.type === "currency"
-  };
-  let value = props.formLinker.getValue(props.name);
-  let inputProps = {
+  const classes = [
+    'input',
+    `input-name-${props.name}`,
+    `size-${props.size}`,
+    props.error && 'error',
+    props.type === 'currency' && 'currency',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+  const inputProps = {
     disabled: props.disabled,
-    hidden: props.type === "hidden",
+    hidden: props.type === 'hidden',
     id: props.name,
     maxLength: props.maxLength,
     name: props.name,
-    onBlur: () => blur(),
-    onChange: (e) => change(e),
-    onFocus: () => focus(),
+    onBlur: blur,
+    onChange: change,
+    onFocus: focus,
     placeholder: props.placeholder,
     type: type(),
-    value: (isNil(value) ? "" : value)
+    value: props.value ?? '',
   };
 
-  return(
-    <ClassNames>
-      {({cx}) => <Style className={cx(classes, "input", `input-name-${props.name}`)} {...inputProps}/>}
-    </ClassNames>
-  );
-};
+  return <Style className={classes} {...inputProps} ref={ref} />;
+});
 
-Input.componentDescription = "Form input element. Used for all form inputs.";
-Input.componentKey = "Form field input";
-Input.componentName = "Form field input";
+Input.componentDescription = 'Form input element. Used for all form inputs.';
+Input.componentKey = 'Form field input';
+Input.componentName = 'Form field input';
+Input.displayName = 'Input';
 
 Input.propTypes = {
   disabled: PropTypes.bool,
-  formLinker: PropTypes.object.isRequired,
+  error: PropTypes.any,
   maxLength: PropTypes.string,
-  name: PropTypes.string.isRequired,
+  name: PropTypes.string,
   onBlur: PropTypes.func,
   onChange: PropTypes.func,
   onFocus: PropTypes.func,
   size: PropTypes.string,
+  /** "text", "number", "currency", "password", or "hidden" */
   type: PropTypes.string,
-  _update: PropTypes.func
+  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
 };
 
 Input.defaultProps = {
   onChange: () => {},
   onFocus: () => {},
   onBlur: () => {},
-  size: "md",
-  type: "string",
-  _update: () => {}
+  size: 'md',
 };
 
 export default Input;

@@ -1,4 +1,4 @@
-import styled from "@emotion/styled";
+import styled from '@emotion/styled';
 
 export default styled.div`
   &.rich-text-editor {
@@ -28,10 +28,6 @@ export default styled.div`
       border-left: 5px solid rgba(100, 100, 100, 0.5);
       margin: 0 2rem;
       padding-left: 1rem;
-    }
-
-    pre, code {
-      font-size: 1rem;
     }
 
     .text-align-center {

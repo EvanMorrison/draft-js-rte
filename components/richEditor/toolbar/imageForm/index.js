@@ -1,4 +1,5 @@
 import Button from "../../../atoms/button";
+import Field from "../../../molecules/field";
 import FormLinker from "form-linker";
 // import Formatters from "../../../utils/formatters";
 import ImagePreviewer from "./imagePreviewer";
@@ -12,49 +13,56 @@ const DropdownContent = props => {
   const [_, forceUpdate] = useReducer(x => x + 1, 0);
   const [hasError, setHasError] = useState(false);
 
-  const formLinker = useRef(new FormLinker({
-    data: {
-      imgFile: null,
-      imgUrl: ""
-    },
-    // formatters: Formatters,
-    // masks: Masks,
-    schema: {
-      imgFile: "file",
-      imgUrl: "string"
-    },
-    onChange: () => forceUpdate(),
-  }));
+  const formLinker = useRef(
+    new FormLinker({
+      data: {
+        imgFile: null,
+        imgUrl: '',
+      },
+      // formatters: Formatters,
+      // masks: Masks,
+      schema: {
+        imgFile: 'file',
+        imgUrl: 'string',
+      },
+      onChange: () => forceUpdate(),
+    })
+  );
   const fl = formLinker.current;
 
   function handleSubmit() {
-    if(isEmpty(fl.getValue("imgUrl")) && isEmpty(fl.getValue("imgFile"))) {
+    if (isEmpty(fl.getValue('imgUrl')) && isEmpty(fl.getValue('imgFile'))) {
       setHasError(true);
     } else {
       props.handleSubmit(cloneDeep(fl.data));
-      fl.setValue("imgUrl", "", false);
-      fl.setValue("imgFile", null, false);
+      fl.setValue('imgUrl', '', false);
+      fl.setValue('imgFile', null, false);
     }
   }
 
   function resetError() {
-    if(hasError) { setHasError(false); }
+    if (hasError) {
+      setHasError(false);
+    }
   }
 
   function renderError() {
-    if(!hasError) { return(null); }
+    if (!hasError) {
+      return null;
+    }
 
-    return(<div className="error">{Translator.translate("Citadel.organisms.richEditor.emptyForm")}</div>);
+    return <div className='error'>{Translator.translate('Citadel.organisms.richEditor.emptyForm')}</div>;
   }
-  const Field = require("../../../molecules/field").default;
 
-  return(
+  return (
     <Styled>
       {renderError()}
-      <Field formLinker={fl} name="imgUrl" label="Full URL to image" onFocus={resetError}/>
+      <Field formLinker={fl} name='imgUrl' label='Full URL to image' onFocus={resetError} />
       <div>or add a file below</div>
-      <ImagePreviewer formLinker={fl} name="imgFile" resetError={resetError}/>
-      <Button block onClick={handleSubmit}>Add to Document</Button>
+      <ImagePreviewer formLinker={fl} name='imgFile' resetError={resetError} />
+      <Button block onClick={handleSubmit}>
+        Add to Document
+      </Button>
     </Styled>
   );
 };

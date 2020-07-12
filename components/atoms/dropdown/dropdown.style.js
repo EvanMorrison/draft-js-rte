@@ -1,5 +1,5 @@
-import styled from "@emotion/styled";
-import { css } from "@emotion/core";
+import styled from '@emotion/styled';
+import { css } from '@emotion/core';
 
 const DropdownStyle = styled.div`
   display: block;
@@ -8,7 +8,7 @@ const DropdownStyle = styled.div`
   background-color: ${props => props.theme.colors.textOnPrimary};
   border: 2px solid ${props => props.theme.colors.border};
   color: ${props => props.theme.colors.primary};
-  z-index: ${props => props.theme.zIndexes["dropDown"]};
+  z-index: ${props => props.theme.zIndexes.dropDown};
 
   .dropdown-content {
     > ul {
@@ -95,8 +95,9 @@ const DropdownStyle = styled.div`
     }
   }
 
-  &:before, &:after {
-    content: "";
+  &:before,
+  &:after {
+    content: '';
     position: absolute;
     top: -10px;
     width: 0;
@@ -126,10 +127,6 @@ export const left = css`
     left: 8px;
   }
 
-  .dropdown-content {
-    text-align: left;
-  }
-
   &:after {
     left: 10px;
   }
@@ -141,10 +138,6 @@ export const right = css`
   &:before {
     top: -12px;
     right: 8px;
-  }
-
-  .dropdown-content {
-    text-align: right;
   }
 
   &:after {

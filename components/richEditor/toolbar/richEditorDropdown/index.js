@@ -10,23 +10,23 @@ export default class RichEditorDropdown extends React.Component {
 
     this.dropdownRef = React.createRef();
 
-    const {controlWidth, dropdownWidth} = this.props;
+    const { controlWidth, dropdownWidth } = this.props;
     this.state = {
       open: false,
       controlWidth: controlWidth || 50,
-      dropdownWidth: (dropdownWidth && dropdownWidth + "px") || "fit-content",
-      orientation: "left"
+      dropdownWidth: (dropdownWidth && dropdownWidth + 'px') || 'fit-content',
+      orientation: 'left',
     };
   }
 
   componentDidUpdate(prevProps) {
-    if(!prevProps.open && this.props.open) {
+    if (!prevProps.open && this.props.open) {
       this.handleButtonClick();
     }
   }
 
   handleButtonClick() {
-    this.setState(({open}) => ({open: !open}));
+    this.setState(({ open }) => ({ open: !open }));
   }
 
   handleSubmit(style) {
@@ -36,12 +36,12 @@ export default class RichEditorDropdown extends React.Component {
   }
 
   renderBtnContent() {
-    const {name, icon, style} = this.props.activeOption.display;
-    return(
+    const { name, icon, style } = this.props.activeOption.display;
+    return (
       <React.Fragment>
-        {icon ? <Icon name={icon}/> : null}
+        {icon ? <Icon name={icon} /> : null}
         {name ? <span style={style}>{name}</span> : null}
-        <Icon name="chevron-down-sld"/>
+        <Icon name='chevron-down-sld' />
       </React.Fragment>
     );
   }
@@ -55,32 +55,28 @@ export default class RichEditorDropdown extends React.Component {
       onButtonClick: () => this.handleButtonClick(),
       container: this.props.editor.current?.editorContainer,
       css: style(this.state),
-      ...!this.props.allowInput && {onMouseDown: e => e.preventDefault()}
+      ...(!this.props.allowInput && { onMouseDown: e => e.preventDefault() }),
     };
     const contentProps = {
-      handleSubmit: (result) => this.handleSubmit(result),
+      handleSubmit: result => this.handleSubmit(result),
       open: this.state.open,
-      ...this.props
+      ...this.props,
     };
-    return(
-      <DropdownBtn {...dropdownProps}>
-        {this.props.render(contentProps)}
-      </DropdownBtn>
-    );
+    return <DropdownBtn {...dropdownProps}>{this.props.render(contentProps)}</DropdownBtn>;
   }
 }
 
 RichEditorDropdown.propTypes = {
   activeOption: PropTypes.shape({
     display: PropTypes.object.isRequired,
-    type: PropTypes.string
+    type: PropTypes.string,
   }),
   allowInput: PropTypes.bool,
-  render: PropTypes.func
+  render: PropTypes.func,
 };
 
 RichEditorDropdown.defaultProps = {
-  activeOption: {display: {}},
+  activeOption: { display: {} },
   allowInput: false,
-  render: () => {}
+  render: () => {},
 };

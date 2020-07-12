@@ -8,8 +8,8 @@ const globalStyle = theme => css`
   }
 
   * {
-    margin: 0px;
-    padding: 0px;
+    margin: 0;
+    padding: 0;
     box-sizing: border-box;
   }
 
@@ -17,7 +17,8 @@ const globalStyle = theme => css`
     outline: 0;
   }
 
-  *:before, *:after {
+  *:before,
+  *:after {
     box-sizing: border-box;
   }
 
@@ -35,27 +36,32 @@ const globalStyle = theme => css`
 
   /* nested list styling for draft.js */
   .ordered-list-item:before {
-    left: -36px; position: absolute; text-align: right; width: 30px;
-  }
-
-  .ordered-list-item:before {
-    content: counter(ol0) ". "; counter-increment: ol0;
+    content: counter(ol0) '. ';
+    counter-increment: ol0;
+    left: -36px;
+    position: absolute;
+    text-align: right;
+    width: 30px;
   }
 
   .ordered-list-item.depth1:before {
-    content: counter(ol1, lower-alpha) ") "; counter-increment: ol1;
+    content: counter(ol1, lower-alpha) ') ';
+    counter-increment: ol1;
   }
 
   .ordered-list-item.depth2:before {
-    content: counter(ol2, lower-roman) ". "; counter-increment: ol2;
+    content: counter(ol2, lower-roman) '. ';
+    counter-increment: ol2;
   }
 
   .ordered-list-item.depth3:before {
-    content: counter(ol3, upper-alpha) ". "; counter-increment: ol3;
+    content: counter(ol3, upper-alpha) '. ';
+    counter-increment: ol3;
   }
 
   .ordered-list-item.depth4:before {
-    content: counter(ol4) ". "; counter-increment: ol4;
+    content: counter(ol4) '. ';
+    counter-increment: ol4;
   }
 
   .list.depth0:first-of-type {
@@ -79,4 +85,4 @@ const globalStyle = theme => css`
   }
 `;
 
-export default globalStyle
+export default globalStyle;

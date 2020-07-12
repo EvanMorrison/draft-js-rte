@@ -1,11 +1,11 @@
-import styled from "@emotion/styled";
-import Button from "./button.style";
-import ColorHelper from "../../utils/colorHelper";
+import styled from '@emotion/styled';
+import Button from './button.style';
+import { offColor as colorHelper } from 'off-color';
 
 const PrimarySecondaryStyle = styled(Button)`
   &:hover:not(.disabled) {
     transition: background-color 200ms ease, color 200ms ease, fill 200ms ease;
-    background-color: ${props => new ColorHelper(props.theme.colors.primary).selected()};
+    background-color: ${props => colorHelper(props.theme.colors.primary).selected().hex()};
     color: ${props => props.theme.colors.textOnPrimarySelected};
     fill: ${props => props.theme.colors.textOnPrimarySelected};
   }
@@ -28,10 +28,10 @@ const PrimarySecondaryStyle = styled(Button)`
   &.danger {
     &:hover:not(.disabled) {
       transition: background-color 200ms ease, color 200ms ease, fill 200ms ease;
-      background-color: ${props => new ColorHelper(props.theme.colors.danger).selected()};
+      background-color: ${props => colorHelper(props.theme.colors.danger).selected().hex()};
       color: ${props => props.theme.colors.textOnDanger};
       fill: ${props => props.theme.colors.textOnDanger};
-      border-color: ${props => new ColorHelper(props.theme.colors.danger).selected()};
+      border-color: ${props => colorHelper(props.theme.colors.danger).selected().hex()};
     }
 
     &:active:not(.disabled) {
