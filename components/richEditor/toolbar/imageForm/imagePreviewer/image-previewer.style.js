@@ -29,6 +29,7 @@ export default styled.div`
       bottom: 0;
       width: 100%;
       background: transparent;
+      background: linear-gradient(transparent, ${props => props.theme.colors.pageBackground});
     }
 
     .icon-cloud {

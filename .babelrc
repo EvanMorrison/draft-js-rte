@@ -3,7 +3,13 @@
     [
       "next/babel",
       {
-        "preset-env": {},
+        "preset-env": {
+          "targets": {
+            "node": "current"
+          },
+          "useBuiltIns": "usage",
+          "corejs": 3
+        },
         "preset-react": {},
         "transform-runtime": {},
         "plugin-proposal-class-properties": {}

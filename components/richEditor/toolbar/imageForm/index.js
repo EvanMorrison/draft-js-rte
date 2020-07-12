@@ -1,9 +1,9 @@
 import Button from "../../../atoms/button";
 import Field from "../../../molecules/field";
 import FormLinker from "form-linker";
-// import Formatters from "../../../../utils/formatters";
+// import Formatters from "../../../utils/formatters";
 import ImagePreviewer from "./imagePreviewer";
-// import Masks from "../../../../utils/masks";
+// import Masks from "../../../utils/masks";
 import React, { useRef, useReducer, useState } from "react";
 import Styled from "./imageForm.style";
 import Translator from "simple-translator";

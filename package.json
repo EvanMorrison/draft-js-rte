@@ -18,6 +18,7 @@
     "@mdx-js/loader": "^1.5.3",
     "@next/mdx": "^9.1.6",
     "@zeit/next-css": "^1.0.1",
+    "core-js": "^3.6.4",
     "draft-js": "^0.11.3",
     "draft-js-export-html": "^1.4.1",
     "draft-js-import-html": "^1.4.1",

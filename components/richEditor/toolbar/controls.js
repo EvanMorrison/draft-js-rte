@@ -28,6 +28,15 @@ const Controls = props => {
     });
   };
 
+  const expandControlSets = controls => {
+    return(controls.flatMap(entry => {
+      if(Array.isArray(entry) && controlSets[entry]) {
+        return([controlSets[entry]]);
+      }
+      return(controlSets[entry] || [entry]);
+    }));
+  };
+
   const renderControlGroups = (controls, id) => {
     const results = controls.map((controlName, index) => {
       if (Array.isArray(controlName)) {

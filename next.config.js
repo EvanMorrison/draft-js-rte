@@ -28,6 +28,18 @@ module.exports = withCSS(
         }]
       },)
 
+      const originalEntry = config.entry;
+      config.entry = async () => {
+        const entries = await originalEntry();
+
+        if (
+          entries['main.js'] &&
+          !entries['main.js'].includes('./client/polyfills.js')
+        ) {
+          entries['main.js'].unshift('core-js/stable', 'regenerator-runtime/runtime')
+        }
+        return entries
+      }
       return config
     }
   })

@@ -11,7 +11,7 @@ const ScrollMessage = () => {
   const show = message ? 'message show' : 'message';
   return (
     <Style className={show}>
-      <p>Scroll to see all content</p>
+      <div>Scroll to see all content</div>
     </Style>
   );
 };

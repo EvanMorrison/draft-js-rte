@@ -161,6 +161,19 @@ const RichEditor = React.forwardRef((props, ref) => {
     }
   };
 
+  const handleDrop = (selection, data, isInternal) => {
+    // when dropping text into a table cell only allow plain text
+    // to be inserted or the table will become corrupted
+    const text = data.data.getData("text");
+    let content = editorState.getCurrentContent();
+    let block = content.getBlockForKey(selection.getStartKey());
+    if(block.getType() === "table") {
+      content = Modifier.insertText(content, selection, text);
+      onChange(EditorState.push(editorState, content, "insert-characters"));
+      return(true);
+    }
+  };
+
   const handleKeyCommand = (command, newEditorState) => {
     switch (command) {
       case 'backspace': {
@@ -268,7 +281,7 @@ const RichEditor = React.forwardRef((props, ref) => {
   const handleKeypressWhenSelectionNotCollapsed = (newEditorState = editorState, chars = '') => {
     let selection = newEditorState.getSelection();
     let content = newEditorState.getCurrentContent();
-    const startKey = selection.getStartKey();
+    let startKey = selection.getStartKey();
     const startBlock = content.getBlockForKey(startKey);
     const endKey = selection.getEndKey();
     const endBlock = content.getBlockForKey(endKey);
@@ -432,6 +445,19 @@ const RichEditor = React.forwardRef((props, ref) => {
       content = Modifier.insertText(content, selection, text);
       onChange(EditorState.push(editorState, content, 'insert-characters'));
       return true;
+    }
+  };
+
+  const handlePastedText = (text, html, editorState) => {
+    // when pasting into a table cell only allow plain text
+    // to be inserted or the table will become corrupted
+    let content = editorState.getCurrentContent();
+    let selection = editorState.getSelection();
+    let block = content.getBlockForKey(selection.getStartKey());
+    if(block.getType() === "table") {
+      content = Modifier.insertText(content, selection, text);
+      onChange(EditorState.push(editorState, content, "insert-characters"));
+      return(true);
     }
   };
 
