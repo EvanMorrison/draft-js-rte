@@ -1,11 +1,10 @@
-import Button from "../atoms/button";
-import React, { useCallback, useEffect, useRef, useState } from "react";
-import ColorHelper from "../utils/colorHelper";
-import { throttle } from "lodash";
-import { css } from "@emotion/core";
+import Button from '../atoms/button';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { throttle } from 'lodash';
+import { css } from '@emotion/core';
 
-const LinkPopover = ({editorRef, editorState, editLink}) => {
-  const editor = useRef(editorRef.editor.closest(".rich-text-editor"));
+const LinkPopover = ({ editorRef, editorState, editLink }) => {
+  const editor = useRef(editorRef.editor.closest('.rich-text-editor'));
 
   const getLinkData = useCallback(() => {
     const contentState = editorState.getCurrentContent();
@@ -19,25 +18,22 @@ const LinkPopover = ({editorRef, editorState, editLink}) => {
     block.findStyleRanges(
       char => {
         const key = char.getEntity();
-        if(key === entityKey) {
+        if (key === entityKey) {
           dataOffset = count;
         }
         count++;
-        return(
-          key &&
-          contentState.getEntity(key).get("type") === "LINK"
-        );
+        return key && contentState.getEntity(key).get('type') === 'LINK';
       },
       () => {}
     );
     const elem = editor.current.querySelector(`span[data-offset-key='${blockKey}-0-${dataOffset}']`);
-    let {left, bottom} = (elem && elem.getBoundingClientRect()) || {};
+    let { left, bottom } = (elem && elem.getBoundingClientRect()) || {};
     const editorPosition = editor.current.getBoundingClientRect();
-    if(bottom > editorPosition.bottom || bottom < editorPosition.top) {
+    if (bottom > editorPosition.bottom || bottom < editorPosition.top) {
       left = -1000;
     }
-    const {url} = contentState.getEntity(entityKey).getData();
-    return({left, bottom, url});
+    const { url } = contentState.getEntity(entityKey).getData();
+    return { left, bottom, url };
   }, [editorState]);
 
   const [linkState, setLinkState] = useState(getLinkData());
@@ -47,23 +43,23 @@ const LinkPopover = ({editorRef, editorState, editLink}) => {
   }, [editorState, getLinkData]);
 
   useEffect(() => {
-    document.onscroll = throttle(function(event) {
+    document.onscroll = throttle(function (event) {
       setLinkState(getLinkData());
     }, 14);
-    const body = document.getElementById("body");
-    if(body) {
-      body.onscroll = throttle(function(event) {
+    const body = document.getElementById('body');
+    if (body) {
+      body.onscroll = throttle(function (event) {
         setLinkState(getLinkData());
       }, 14);
     }
     const editorBox = editor.current;
-    editorBox.onscroll = throttle(function(event) {
+    editorBox.onscroll = throttle(function (event) {
       setLinkState(getLinkData());
     }, 14);
-    return() => {
+    return () => {
       document.onscroll = null;
       editorBox.onscroll = null;
-      if(body) {
+      if (body) {
         body.onscroll = null;
       }
     };
@@ -76,9 +72,10 @@ const LinkPopover = ({editorRef, editorState, editLink}) => {
     background: ${theme.colors.pageBackground};
     z-index: 1;
     font-size: 14px;
-    box-shadow: 2px 2px 12px -6px ${new ColorHelper(theme.colors.pageBackground).shadowColor()};
-    ::before {
-      content: "";
+    box-shadow: 2px 2px 12px -6px ${theme.colors.shadowOnPage};
+
+    :before {
+      content: '';
       position: absolute;
       border-style: solid;
       border-width: 5px;
@@ -89,10 +86,26 @@ const LinkPopover = ({editorRef, editorState, editLink}) => {
     }
   `;
 
-  return(
-    <div css={theme => ([{position: "fixed", left: linkState.left, top: linkState.bottom + 5}, style(theme)])}>
-      <a css={{maxWidth: 300, display: "inline-block", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis"}} href={linkState.url} target="_blank">{linkState.url}</a>
-      <span css={{marginLeft: 3}}><Button type="tertiary" size="sm" onClick={editLink}>Edit</Button></span>
+  return (
+    <div css={theme => [{ position: 'fixed', left: linkState.left, top: linkState.bottom + 5 }, style(theme)]}>
+      <a
+        css={{
+          maxWidth: 300,
+          display: 'inline-block',
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+        }}
+        href={linkState.url}
+        target='_blank'
+      >
+        {linkState.url}
+      </a>
+      <span css={{ marginLeft: 3 }}>
+        <Button type='tertiary' size='sm' onClick={editLink}>
+          Edit
+        </Button>
+      </span>
     </div>
   );
 };

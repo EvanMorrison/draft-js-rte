@@ -1,4 +1,4 @@
-import styled from "@emotion/styled";
+import styled from '@emotion/styled';
 
 const LabelStyle = styled.label`
   &.form-label {
@@ -7,7 +7,7 @@ const LabelStyle = styled.label`
     font-size: 14px;
     color: ${props => props.theme.colors.inputLabel};
     text-align: left;
-    width: 100%;
+    width: fit-content;
     margin: 0;
     padding: 0;
     overflow-y: hidden;
@@ -39,6 +39,16 @@ const LabelStyle = styled.label`
           color: ${props => props.theme.colors.danger};
         }
       }
+    }
+
+    &.size-sm {
+      font-size: 12px;
+      line-height: 14px;
+    }
+
+    &.size-lg {
+      font-size: 16px;
+      line-height: 18px;
     }
   }
 `;

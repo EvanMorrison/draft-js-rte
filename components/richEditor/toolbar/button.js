@@ -8,26 +8,30 @@ const Button = props => {
   function onToggle(e) {
     e.preventDefault();
     props.onToggle(props.style);
-  };
+  }
 
   function renderTooltip() {
-    if(!props.tooltip) { return(null); }
+    if (!props.tooltip) {
+      return null;
+    }
 
-    return(
-      <Tooltip key="dropdown" orientation={props.tooltipOrientation}>{props.tooltip}</Tooltip>
+    return (
+      <Tooltip key='dropdown' orientation={props.tooltipOrientation}>
+        {props.tooltip}
+      </Tooltip>
     );
   }
 
   const classes = {
-    "rich-editor-style-button": true,
-    "rich-editor-active-button": props.active
+    'rich-editor-style-button': true,
+    'rich-editor-active-button': props.active,
   };
 
-  return(
+  return (
     <Style>
       <ClassNames>
-        {({cx}) => (
-          <div className={cx(classes)} onMouseDown={(e) => onToggle(e)}>
+        {({ cx }) => (
+          <div className={cx(classes)} onMouseDown={e => onToggle(e)}>
             {props.label}
             {renderTooltip()}
           </div>
@@ -41,16 +45,13 @@ Button.propTypes = {
   active: PropTypes.bool,
   label: PropTypes.element,
   onToggle: PropTypes.func,
-  style: PropTypes.oneOfType([
-    PropTypes.object,
-    PropTypes.string
-  ]),
-  tooltip: PropTypes.string
+  style: PropTypes.oneOfType([PropTypes.object, PropTypes.string]),
+  tooltip: PropTypes.string,
 };
 
 Button.defaultProps = {
   onToggle: () => {},
-  tooltip: ""
+  tooltip: '',
 };
 
 export default Button;

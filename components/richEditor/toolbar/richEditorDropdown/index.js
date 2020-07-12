@@ -2,7 +2,7 @@ import DropdownBtn from "../../../molecules/dropdownBtn";
 import Icon from "../../../atoms/icon";
 import PropTypes from "prop-types";
 import React from "react";
-import Style from "./dropdown.style";
+import style from "./dropdown.style";
 
 export default class RichEditorDropdown extends React.Component {
   constructor(props) {
@@ -10,47 +10,38 @@ export default class RichEditorDropdown extends React.Component {
 
     this.dropdownRef = React.createRef();
 
-    const {controlWidth, dropdownWidth, maxHeight} = this.props;
+    const { controlWidth, dropdownWidth } = this.props;
     this.state = {
       open: false,
       controlWidth: controlWidth || 50,
-      dropdownWidth: dropdownWidth || controlWidth || 65,
-      maxHeight: (maxHeight ? Math.min(maxHeight, 470) : 470),
-      orientation: "left"
+      dropdownWidth: (dropdownWidth && dropdownWidth + 'px') || 'fit-content',
+      orientation: 'left',
     };
   }
 
   componentDidUpdate(prevProps) {
-    if(!prevProps.open && this.props.open) {
-      this.handleOpen();
+    if (!prevProps.open && this.props.open) {
+      this.handleButtonClick();
     }
   }
 
-  handleOpen() {
-    if(!this.state.open) {
-      const editor = document.getElementById(this.props.editorName);
-      const dimensions = editor.getBoundingClientRect();
-      let left = this.dropdownRef.current.getBoundingClientRect().left - dimensions.left;
-      const orientation = left < dimensions.width / 2 ? "left" : "right";
-      this.setState({orientation, open: true});
-    } else {
-      this.setState({open: false});
-    }
+  handleButtonClick() {
+    this.setState(({ open }) => ({ open: !open }));
   }
 
   handleSubmit(style) {
     this.props.onSelect(style);
 
-    this.handleOpen();
+    this.handleButtonClick();
   }
 
   renderBtnContent() {
-    const {name, icon, style} = this.props.activeOption.display;
-    return(
+    const { name, icon, style } = this.props.activeOption.display;
+    return (
       <React.Fragment>
-        {icon ? <Icon name={icon}/> : null}
+        {icon ? <Icon name={icon} /> : null}
         {name ? <span style={style}>{name}</span> : null}
-        <Icon name="chevron-down-sld"/>
+        <Icon name='chevron-down-sld' />
       </React.Fragment>
     );
   }
@@ -59,39 +50,33 @@ export default class RichEditorDropdown extends React.Component {
     const dropdownProps = {
       buttonContent: this.renderBtnContent(),
       dropdownOpen: this.state.open,
-      dropdownTop: "38px",
       dropdownOrientation: this.state.orientation,
-      onButtonClick: () => this.handleOpen()
+      dropdownTop: 42,
+      onButtonClick: () => this.handleButtonClick(),
+      container: this.props.editor.current?.editorContainer,
+      css: style(this.state),
+      ...(!this.props.allowInput && { onMouseDown: e => e.preventDefault() }),
     };
     const contentProps = {
-      handleSubmit: (result) => this.handleSubmit(result),
+      handleSubmit: result => this.handleSubmit(result),
       open: this.state.open,
-      ...this.props
+      ...this.props,
     };
-
-    return(
-      <div ref={this.dropdownRef}>
-        <Style className="rich-editor-dropdown" onMouseDown={(e) => (this.props.allowInput ? null : e.preventDefault())} {...this.state}>
-          <DropdownBtn {...dropdownProps} >
-            {this.props.render(contentProps)}
-          </DropdownBtn>
-        </Style>
-      </div>
-    );
+    return <DropdownBtn {...dropdownProps}>{this.props.render(contentProps)}</DropdownBtn>;
   }
 }
 
 RichEditorDropdown.propTypes = {
   activeOption: PropTypes.shape({
     display: PropTypes.object.isRequired,
-    type: PropTypes.string
+    type: PropTypes.string,
   }),
   allowInput: PropTypes.bool,
-  render: PropTypes.func
+  render: PropTypes.func,
 };
 
 RichEditorDropdown.defaultProps = {
-  activeOption: {display: {}},
+  activeOption: { display: {} },
   allowInput: false,
-  render: () => {}
+  render: () => {},
 };

@@ -1,9 +1,10 @@
-import styled from "@emotion/styled";
+import styled from '@emotion/styled';
 
 export default styled.div`
   position: relative;
 
-  .tooltip.top, .tooltip.bottom {
+  .tooltip.top,
+  .tooltip.bottom {
     white-space: pre-wrap;
     margin-left: 6px;
 

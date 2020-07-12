@@ -1,9 +1,12 @@
-import styled from "@emotion/styled";
+import styled from '@emotion/styled';
 
 export default styled.div`
+  display: flex;
+
   .group {
     display: flex;
     flex-wrap: wrap;
+    flex: 1 1 50%;
     margin: 8px;
 
     .heading {
@@ -12,12 +15,12 @@ export default styled.div`
     }
 
     .swatch {
-      width: ${props => (props.dropdownWidth - (props.columns + 16)) / props.columns}px;
-      height: ${props => (props.dropdownWidth - (props.columns + 16)) / props.columns}px;
+      width: ${props => (props.dropdownWidth / 2 - (props.columns + 16)) / props.columns}px;
+      height: ${props => (props.dropdownWidth / 2 - (props.columns + 16)) / props.columns}px;
       display: inline-block;
       margin: 0;
       padding: 0;
-      border: 0.5px solid #EEEEEE;
+      border: 0.5px solid #eeeeee;
 
       :hover {
         cursor: pointer;

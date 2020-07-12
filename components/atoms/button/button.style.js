@@ -1,4 +1,4 @@
-import styled from "@emotion/styled";
+import styled from '@emotion/styled';
 
 export default styled.button`
   position: relative;
@@ -55,7 +55,6 @@ export default styled.button`
   }
 
   &.disabled {
-    opacity: 0.2;
     cursor: not-allowed;
   }
 

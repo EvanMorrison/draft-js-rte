@@ -1,12 +1,12 @@
-import styled from "@emotion/styled";
-import ColorHelper from "../../utils/colorHelper";
+import styled from '@emotion/styled';
+import { offColor as colorHelper } from 'off-color';
 
 export default styled.div`
   &.message {
     transition: all 0.2s;
     height: 0;
     width: 100%;
-    background: ${props => new ColorHelper(props.theme.colors.warning).lighten(0.3)};
+    background: ${props => colorHelper(props.theme.colors.warning).lighten(0.3).hex()};
     text-align: center;
     font-weight: bold;
     opacity: 0;

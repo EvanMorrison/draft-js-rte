@@ -1,61 +1,67 @@
-import PropTypes from "prop-types";
-import React from "react";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+// import Icons from './icons';
+import PropTypes from 'prop-types';
+import React from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
-class Icon extends React.Component {
-  icon(original) {
+const Icon = props => {
+  function icon(original) {
     const name = original.substring(0, original.length - 4);
 
-    if((original.length - original.indexOf("reg")) === 3) {
-      return(["far", name]);
-    } else if((original.length - original.indexOf("lgt")) === 3) {
-      return(["fal", name]);
-    } else if((original.length - original.indexOf("sld")) === 3) {
-      return(["fas", name]);
+    if (original.length - original.indexOf('reg') === 3) {
+      return ['far', name];
+    } else if (original.length - original.indexOf('lgt') === 3) {
+      return ['fal', name];
+    } else if (original.length - original.indexOf('sld') === 3) {
+      return ['fas', name];
     } else {
-      console.error("You have not provided a valid icon type");
-      return(["fas", name]);
+      console.error('You have not provided a valid icon type');
+      return ['fas', name];
     }
   }
 
-  render() {
-    let props = {
-      border: this.props.border,
-      color: this.props.color,
-      fixedWidth: this.props.fixedWidth,
-      flip: this.props.flip,
-      icon: this.icon(this.props.name),
-      inverse: this.props.inverse,
-      listItem: this.props.listItem,
-      onClick: (e) => this.props.onClick(e),
-      pulse: this.props.pulse,
-      rotation: this.props.rotation,
-      size: this.props.size,
-      spin: this.props.spin,
-      transform: this.props.transform
-    };
+  // if (
+  //   [
+  //     'applicant-pending',
+  //     'applicant-ready',
+  //     'batch-order',
+  //     'draft-icon',
+  //     'new-order',
+  //     'revert-color',
+  //     'xml-ready',
+  //   ].includes(props.name)
+  // ) {
+  //   return (
+  //     <svg viewBox='0 0 1024 1024' className={'icon-' + props.name} onClick={() => props.onClick()}>
+  //       <path d={Icons[props.name]} />
+  //     </svg>
+  //   );
+  // }
 
-    return(<FontAwesomeIcon {...props}/>);
-  }
-}
+  const iconProps = {
+    border: props.border,
+    color: props.color,
+    'data-testid': props.testid,
+    fixedWidth: props.fixedWidth,
+    flip: props.flip,
+    icon: icon(props.name),
+    inverse: props.inverse,
+    listItem: props.listItem,
+    onClick: e => props.onClick(e),
+    pulse: props.pulse,
+    rotation: props.rotation,
+    size: props.size,
+    spin: props.spin,
+    style: props.style,
+    title: props.title,
+    transform: props.transform,
+  };
 
-Icon.componentDescription = "Icon library.";
-Icon.componentKey = "icon";
-Icon.componentName = "Icon";
-
-Icon.propDescriptions = {
-  border: "Border",
-  fixedWidth: "Fixed width",
-  flip: "Flip",
-  inverse: "Inverse",
-  listItem: "List item",
-  name: "Name of the icon.",
-  pulse: "Pulse",
-  rotation: "Rotate",
-  size: "Size of icon. Options for fa icons are \"xs\", \"sm\", \"lg\", \"2x\", \"3x\", \"4x\", \"5x\", \"6x\", \"7x\", \"8x\", \"9x\", \"10x\"",
-  spin: "Spin",
-  transform: "Advanced transformation."
+  return <FontAwesomeIcon {...iconProps} />;
 };
+
+Icon.componentDescription = 'Icon library.';
+Icon.componentKey = 'icon';
+Icon.componentName = 'Icon';
 
 Icon.propTypes = {
   border: PropTypes.bool,
@@ -69,11 +75,12 @@ Icon.propTypes = {
   pulse: PropTypes.bool,
   rotation: PropTypes.number,
   size: PropTypes.string,
-  spin: PropTypes.bool
+  spin: PropTypes.bool,
+  style: PropTypes.object,
 };
 
 Icon.defaultProps = {
-  onClick: () => {}
+  onClick: () => {},
 };
 
 export default Icon;

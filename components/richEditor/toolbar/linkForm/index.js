@@ -1,28 +1,34 @@
 import Button from "../../../atoms/button";
+import Field from "../../../molecules/field";
 // import Formatters from "../../../../utils/formatters";
 import FormLinker from "form-linker";
 // import Masks from "../../../../utils/masks";
-import React, { useEffect, useReducer, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Styled from "./linkForm.style";
 import { isEmpty } from "lodash";
 
 const DropdownContent = props => {
-  const [_, forceUpdate] = useReducer(x => x + 1, 0);
-  const formLinker = useRef(new FormLinker({
-    data: {
-      entityKey: null,
-      displayText: "",
-      linkUrl: ""
-    },
-    // formatters: Formatters,
-    // masks: Masks,
-    schema: {
-      entityKey: "string",
-      displayText: "string.required",
-      linkUrl: "string.required"
-    }
-  }));
+  const formLinker = useRef(
+    new FormLinker({
+      data: {
+        entityKey: null,
+        displayText: '',
+        linkUrl: '',
+        newTab: true,
+      },
+      // formatters: Formatters,
+      // masks: Masks,
+      schema: {
+        entityKey: 'string',
+        displayText: 'string.required',
+        linkUrl: 'string.required',
+        newTab: 'boolean',
+      },
+    })
+  );
   const fl = formLinker.current;
+
+  const [textDirty, setTextDirty] = useState(false);
 
   useEffect(() => {
     // if current selection point includes an existing link, populate the form with the link's text and url.
@@ -32,44 +38,54 @@ const DropdownContent = props => {
     const block = contentState.getBlockForKey(key);
 
     let entityKey = block.getEntityAt(selection.getAnchorOffset());
-    let linkUrl = "";
-    let displayText = "";
-    if(entityKey) {
+    let linkUrl = '';
+    let newTab = true;
+    let displayText = '';
+    if (entityKey) {
       const entity = contentState.getEntity(entityKey);
-      if(entity.getType() === "LINK") {
+      if (entity.getType() === 'LINK') {
+        newTab = entity.getData().target === '_blank';
         linkUrl = entity.getData().url;
-        block.findEntityRanges(metadata => {
-          return(metadata.includes(entityKey));
-        },
-        (start, end) => {
-          displayText = block.getText().slice(start, end);
-        });
+        block.findEntityRanges(
+          metadata => {
+            return metadata.includes(entityKey);
+          },
+          (start, end) => {
+            displayText = block.getText().slice(start, end);
+          }
+        );
       } else {
         entityKey = null;
       }
     }
 
-    formLinker.current.setValuesFromParsed({linkUrl, displayText, entityKey});
-    forceUpdate();
+    formLinker.current.setValuesFromParsed({ linkUrl, displayText, newTab, entityKey });
   }, [props.editorState]);
 
   function handleSubmit() {
     fl.validateAll();
-    if(isEmpty(fl.errors)) {
-      props.handleSubmit({...fl.data});
-      fl.setValue("linkUrl", "", false);
-      fl.setValue("displayText", "", false);
-      fl.setValue("entityKey", null, false);
+    if (isEmpty(fl.errors)) {
+      props.handleSubmit({ ...fl.data });
+      fl.setValue('linkUrl', '', false);
+      fl.setValue('displayText', '', false);
+      fl.setValue('entityKey', null, false);
     }
   }
 
-  const Field = require("../../../molecules/field").default;
+  function handleUrlChange(newLink = !fl.getValue('entityKey'), url = fl.getValue('linkUrl')) {
+    if (newLink && !textDirty) {
+      fl.setValue('displayText', url);
+    }
+  }
 
-  return(
+  return (
     <Styled>
-      <Field formLinker={fl} name="linkUrl" label="Full link URL"/>
-      <Field formLinker={fl} name="displayText" label="Link text"/>
-      <Button block onClick={() => handleSubmit()}>Add to Document</Button>
+      <Field formLinker={fl} name='linkUrl' label='Full URL' onChange={handleUrlChange} />
+      <Field formLinker={fl} name='displayText' label='Text to display' onFocus={() => setTextDirty(true)} />
+      <Field formLinker={fl} name='newTab' label='Open link in new tab' type='checkbox' />
+      <Button block onClick={() => handleSubmit()}>
+        Add to Document
+      </Button>
     </Styled>
   );
 };

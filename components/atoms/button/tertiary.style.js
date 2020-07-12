@@ -1,8 +1,16 @@
-import styled from "@emotion/styled";
-import ButtonStyle from "./button.style";
-import ColorHelper from "../../utils/colorHelper";
+import styled from '@emotion/styled';
+import ButtonStyle from './button.style';
+import { offColor as colorHelper } from 'off-color';
 
 const TertiaryStyle = styled(ButtonStyle)`
+  &.disabled {
+    color: ${props => colorHelper(props.theme.colors.primary).rgba(0.6)};
+  }
+
+  &.danger.disabled {
+    color: ${props => colorHelper(props.theme.colors.danger).rgba(0.6)};
+  }
+
   border: 1px solid transparent;
   color: ${props => props.theme.colors.primary};
   fill: ${props => props.theme.colors.primary};
@@ -10,7 +18,7 @@ const TertiaryStyle = styled(ButtonStyle)`
 
   &:hover:not(.disabled) {
     transition: background-color 200ms ease, color 200ms ease, fill 200ms ease;
-    background-color: ${props => new ColorHelper(props.theme.colors.primary).selected()};
+    background-color: ${props => colorHelper(props.theme.colors.primary).selected().hex()};
     color: ${props => props.theme.colors.textOnPrimarySelected};
     fill: ${props => props.theme.colors.textOnPrimarySelected};
   }
@@ -28,7 +36,7 @@ const TertiaryStyle = styled(ButtonStyle)`
 
     &:hover:not(.disabled) {
       transition: background-color 200ms ease, color 200ms ease, fill 200ms ease;
-      background-color: ${props => new ColorHelper(props.theme.colors.danger).selected()};
+      background-color: ${props => colorHelper(props.theme.colors.danger).selected().hex()};
       color: ${props => props.theme.colors.textOnPrimarySelected};
       fill: ${props => props.theme.colors.textOnPrimarySelected};
     }

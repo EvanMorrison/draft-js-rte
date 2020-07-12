@@ -1,13 +1,19 @@
-import styled from "@emotion/styled";
+import styled from '@emotion/styled';
 
 export default styled.div`
   &.rich-text-editor {
     position: relative;
     padding: 12px;
     border: 1px solid ${props => props.theme.colors.richTextBorder};
+    border-top: none;
     border-radius: 0 0 3px 3px;
     overflow-y: auto;
     resize: vertical;
+
+    &.no-toolbar {
+      border-top: 1px solid ${props => props.theme.colors.richTextBorder};
+      border-radius: 3px;
+    }
 
     section {
       margin-top: 1em;
@@ -22,10 +28,6 @@ export default styled.div`
       border-left: 5px solid rgba(100, 100, 100, 0.5);
       margin: 0 2rem;
       padding-left: 1rem;
-    }
-
-    pre, code {
-      font-size: 1rem;
     }
 
     .text-align-center {

@@ -1,4 +1,5 @@
-import styled from "@emotion/styled";
+import styled from '@emotion/styled';
+import { css } from '@emotion/core';
 
 const DropdownStyle = styled.div`
   display: block;
@@ -7,7 +8,7 @@ const DropdownStyle = styled.div`
   background-color: ${props => props.theme.colors.textOnPrimary};
   border: 2px solid ${props => props.theme.colors.border};
   color: ${props => props.theme.colors.primary};
-  z-index: ${props => props.theme.zIndexes["dropDown"]};
+  z-index: ${props => props.theme.zIndexes.dropDown};
 
   .dropdown-content {
     > ul {
@@ -94,8 +95,9 @@ const DropdownStyle = styled.div`
     }
   }
 
-  &:before, &:after {
-    content: "";
+  &:before,
+  &:after {
+    content: '';
     position: absolute;
     top: -10px;
     width: 0;
@@ -113,40 +115,32 @@ const DropdownStyle = styled.div`
     border-width: 0 10px 10px;
     border-color: transparent transparent ${props => props.theme.colors.textOnPrimary} transparent;
   }
-
-  &.left {
-    left: 10px;
-
-    &:before {
-      top: -12px;
-      left: 8px;
-    }
-
-    .dropdown-content {
-      text-align: left;
-    }
-
-    &:after {
-      left: 10px;
-    }
-  }
-
-  &.right {
-    right: 10px;
-
-    &:before {
-      top: -12px;
-      right: 8px;
-    }
-
-    .dropdown-content {
-      text-align: right;
-    }
-
-    &:after {
-      right: 10px;
-    }
-  }
 `;
 
 export default DropdownStyle;
+
+export const left = css`
+  left: 10px;
+
+  &:before {
+    top: -12px;
+    left: 8px;
+  }
+
+  &:after {
+    left: 10px;
+  }
+`;
+
+export const right = css`
+  right: 10px;
+
+  &:before {
+    top: -12px;
+    right: 8px;
+  }
+
+  &:after {
+    right: 10px;
+  }
+`;

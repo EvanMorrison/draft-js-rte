@@ -1,71 +1,65 @@
-import React from "react";
-import PropTypes from "prop-types";
-import Style from "./label.style";
-import Translator from "simple-translator";
-import { isEmpty, isNil } from "lodash";
-import { ClassNames } from "@emotion/core";
+import React from 'react';
+import PropTypes from 'prop-types';
+import Style from './label.style';
+import Translator from 'simple-translator';
+import { isEmpty, isNil } from 'lodash';
 
 const Label = props => {
   function renderError() {
-    if(props.errors.length === 0) { return(null); }
+    if (props.errors.length === 0) {
+      return null;
+    }
 
-    const errors = props.errors.map((error) => {
-      return(Translator.translate(error));
+    const errors = props.errors.map(error => {
+      return Translator.translate(error);
     });
 
-    return(<div className="error-text">&nbsp;-&nbsp;{errors.join(", ")}</div>);
+    return <div className='error-text'>&nbsp;-&nbsp;{errors.join(', ')}</div>;
   }
 
   function renderStar() {
-    if(isNil(props.label) || isEmpty(props.label) || !props.required) { return(null); }
+    if (isNil(props.label) || isEmpty(props.label) || !props.required) {
+      return null;
+    }
 
-    return(<span className="required-star">*</span>);
+    return <span className='required-star'>*</span>;
   }
 
-  let classes = {
-    "form-label": true,
-    "disabled": props.disabled,
-    "error": props.errors.length > 0
-  };
+  const classes = ['form-label', `size-${props.size}`, props.disabled && 'disabled', props.errors.length > 0 && 'error']
+    .filter(Boolean)
+    .join(' ');
 
-  return(
-    <ClassNames>
-      {({cx}) => (
-        <Style className={cx(classes)} htmlFor={props.name} onClick={() => props.onClick()}>
-          {props.children}
-          <div className="label-content">
-            {props.label}{renderStar()}{renderError()}
-          </div>
-        </Style>
-      )}
-    </ClassNames>
+  return (
+    <Style className={classes} htmlFor={props.name} onClick={() => props.onClick()}>
+      {props.children}
+      <div className='label-content'>
+        {props.label}
+        {renderStar()}
+        {renderError()}
+      </div>
+    </Style>
   );
 };
 
-Label.componentDescription = "Badge for emphasising important numbers.";
-Label.componentKey = "label";
-Label.componentName = "Form field label";
-
-Label.propDescriptions = {
-  errors: "Error message text.",
-  label: "Label message text.",
-  onClick: "Callback function when clicked.",
-  required: "Boolean of whether this field is required for valid form submission."
-};
+Label.componentDescription = 'Badge for emphasising important numbers.';
+Label.componentKey = 'label';
+Label.componentName = 'Form field label';
 
 Label.propTypes = {
   disabled: PropTypes.bool,
   errors: PropTypes.array,
   onClick: PropTypes.func,
-  label: PropTypes.string,
-  required: PropTypes.bool
+  label: PropTypes.node,
+  required: PropTypes.bool,
+  size: PropTypes.oneOf(['sm', 'md', 'lg']),
 };
 
 Label.defaultProps = {
   disabled: false,
   errors: [],
   onClick: () => {},
-  required: false
+  required: false,
+  size: 'md',
 };
 
 export default Label;

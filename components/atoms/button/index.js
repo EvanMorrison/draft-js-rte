@@ -1,88 +1,90 @@
-import PrimaryStyle from "./primary.style";
-import PropTypes from "prop-types";
-import React from "react";
-import SecondaryStyle from "./secondary.style";
-import TertiaryStyle from "./tertiary.style";
-import Tooltip from "../tooltip";
-import { isNil } from "lodash";
-import { ClassNames } from "@emotion/core";
+import PrimaryStyle from './primary.style';
+import PropTypes from 'prop-types';
+import React from 'react';
+import SecondaryStyle from './secondary.style';
+import TertiaryStyle from './tertiary.style';
+import Tooltip from '../tooltip';
+import { isNil } from 'lodash';
+import { ClassNames } from '@emotion/core';
 
-const Button = ({block, children, className, danger, disabled, onClick, size, tooltip, tooltipOrientation, type}) => {
-  const handleClick = (e) => {
+const Button = ({
+  block,
+  children,
+  className,
+  danger,
+  disabled,
+  hasTooltipWhenDisabled,
+  onClick,
+  size,
+  tooltip,
+  tooltipOrientation,
+  type,
+}) => {
+  const handleClick = e => {
     stopPropagation(e);
-    if(!disabled) {
+    if (!disabled) {
       onClick();
     }
   };
 
-  const stopPropagation = (e) => {
-    if(typeof(e) !== "undefined") {
+  const stopPropagation = e => {
+    if (typeof e !== 'undefined') {
       e.preventDefault();
       e.stopPropagation();
     }
   };
 
   const renderContent = () => {
-    return([
-      <div key="btn-content" className="btn-content">
+    return [
+      <div key='btn-content' className='btn-content'>
         {children}
       </div>,
-      (!isNil(tooltip) && !disabled) &&
-      <Tooltip key="dropdown" orientation={tooltipOrientation}>{tooltip}</Tooltip>
-    ]);
+      !isNil(tooltip) && (!disabled || hasTooltipWhenDisabled) && (
+        <Tooltip key='dropdown' orientation={tooltipOrientation}>
+          {tooltip}
+        </Tooltip>
+      ),
+    ];
   };
 
-  let classes = {
-    "button": true,
-    "danger": danger,
-    "disabled": disabled,
-    "primary": type === "primary",
-    "secondary": type === "secondary",
-    "tertiary": type === "tertiary",
-    "size-lg": size === "lg",
-    "size-md": size === "md",
-    "size-sm": size === "sm",
-    "block": block,
-    [className]: true
+  const classes = {
+    button: true,
+    danger: danger,
+    disabled: disabled,
+    primary: type === 'primary',
+    secondary: type === 'secondary',
+    tertiary: type === 'tertiary',
+    'size-lg': size === 'lg',
+    'size-md': size === 'md',
+    'size-sm': size === 'sm',
+    block: block,
+    [className]: true,
   };
 
-  let props = {
+  const props = {
     children: renderContent(),
-    onClick: (e) => handleClick(e),
-    type: "button"
+    onClick: e => handleClick(e),
+    type: 'button',
   };
 
-  return(
+  return (
     <ClassNames>
-      {({cx}) => {
-        if(type === "primary") {
-          return(<PrimaryStyle className={cx(classes)} {...props}/>);
-        } else if(type === "tertiary") {
-          return(<TertiaryStyle className={cx(classes)} {...props}/>);
+      {({ cx }) => {
+        if (type === 'primary') {
+          return <PrimaryStyle className={cx(classes)} {...props} />;
+        } else if (type === 'tertiary') {
+          return <TertiaryStyle className={cx(classes)} {...props} />;
         } else {
-          return(<SecondaryStyle className={cx(classes)} {...props}/>);
+          return <SecondaryStyle className={cx(classes)} {...props} />;
         }
       }}
     </ClassNames>
   );
 };
 
-Button.componentDescription = "Standard extendable button.";
-Button.componentKey = "button";
-Button.componentName = "Button";
-
-Button.propDescriptions = {
-  block: "Full width button.",
-  children: "Button text or content.",
-  className: "class to be added to className",
-  danger: "Button color will be theme's \"danger\" color",
-  disabled: "Boolean whether the button is disabled.",
-  onClick: "Callback function when button is clicked.",
-  size: "Button size. Options are \"lg\", \"md\", and \"sm\".",
-  tooltip: "Tooltip message.",
-  tooltipOrientation: "Top, bottom, left or right tooltip alignment.",
-  type: "Button style type. Options are \"primary\", \"secondary\", and \"tertiary\"."
-};
+Button.componentDescription = 'Standard extendable button.';
+Button.componentKey = 'button';
+Button.componentName = 'Button';
 
 Button.propTypes = {
   /** Full width button. */
@@ -93,26 +95,28 @@ Button.propTypes = {
   danger: PropTypes.bool,
   /** Boolean whether the button is disabled. */
   disabled: PropTypes.bool,
+  /** Whether to show the tooltip even if the button is disabled */
+  hasTooltipWhenDisabled: PropTypes.bool,
   /** Callback function when button is clicked. */
   onClick: PropTypes.func,
   /** Button size. Options are "lg", "md", and "sm". */
-  size: PropTypes.string,
-  /** Tooltip message. */
-  tooltip: PropTypes.string,
+  size: PropTypes.oneOf(['sm', 'md', 'lg']),
+  /** Tooltip message. Only shown when button is enabled unless hasTooltipWhenDisabled prop is true. */
+  tooltip: PropTypes.node,
   /** Top, bottom, left or right tooltip alignment. */
-  tooltipOrientation: PropTypes.string,
+  tooltipOrientation: PropTypes.oneOf(['top', 'bottom', 'left', 'right']),
   /** Button style type. Options are "primary", "secondary", and "tertiary". */
-  type: PropTypes.string
+  type: PropTypes.oneOf(['primary', 'secondary', 'tertiary']),
 };
 
 Button.defaultProps = {
   block: false,
-  className: "",
+  className: '',
   danger: false,
   disabled: false,
   onClick: () => {},
-  size: "md",
-  type: "secondary"
+  size: 'md',
+  type: 'secondary',
 };
 
 export default Button;

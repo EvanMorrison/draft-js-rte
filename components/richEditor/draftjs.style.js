@@ -1,12 +1,14 @@
-import styled from "@emotion/styled";
+import styled from '@emotion/styled';
 
 export default styled.div`
-  .DraftEditor-editorContainer, .DraftEditor-root, .public-DraftEditor-content {
+  .DraftEditor-editorContainer,
+  .DraftEditor-root,
+  .public-DraftEditor-content {
     height: inherit;
     text-align: initial;
   }
 
-  .public-DraftEditor-content[contenteditable=true] {
+  .public-DraftEditor-content[contenteditable='true'] {
     -webkit-user-modify: read-write-plaintext-only;
   }
 
@@ -48,13 +50,13 @@ export default styled.div`
   }
 
   .public-DraftEditorPlaceholder-root {
-    color: #9197A3;
+    color: #9197a3;
     position: absolute;
     z-index: 1;
   }
 
   .public-DraftEditorPlaceholder-hasFocus {
-    color: #BDC1C9;
+    color: #bdc1c9;
   }
 
   .DraftEditorPlaceholder-hidden {
@@ -84,7 +86,8 @@ export default styled.div`
     direction: rtl;
   }
 
-  .public-DraftStyleDefault-ol,.public-DraftStyleDefault-ul {
+  .public-DraftStyleDefault-ol,
+  .public-DraftStyleDefault-ul {
     margin: 0;
     padding: 0;
   }
@@ -162,27 +165,27 @@ export default styled.div`
   }
 
   .public-DraftStyleDefault-orderedListItem:before {
-    content: counter(ol0) ". ";
+    content: counter(ol0) '. ';
     counter-increment: ol0;
   }
 
   .public-DraftStyleDefault-orderedListItem.public-DraftStyleDefault-depth1:before {
-    content: counter(ol1, lower-alpha) ") ";
+    content: counter(ol1, lower-alpha) ') ';
     counter-increment: ol1;
   }
 
   .public-DraftStyleDefault-orderedListItem.public-DraftStyleDefault-depth2:before {
-    content: counter(ol2, lower-roman) ". ";
+    content: counter(ol2, lower-roman) '. ';
     counter-increment: ol2;
   }
 
   .public-DraftStyleDefault-orderedListItem.public-DraftStyleDefault-depth3:before {
-    content: counter(ol3, upper-alpha) ". ";
+    content: counter(ol3, upper-alpha) '. ';
     counter-increment: ol3;
   }
 
   .public-DraftStyleDefault-orderedListItem.public-DraftStyleDefault-depth4:before {
-    content: counter(ol4) ". ";
+    content: counter(ol4) '. ';
     counter-increment: ol4;
   }
 

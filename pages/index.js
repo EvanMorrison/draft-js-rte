@@ -1,6 +1,7 @@
 import React, { useReducer, useRef } from 'react'
 import Head from 'next/head'
 import Content from './indexContent.mdx'
+import Field from '../components/molecules/field';
 import Editor from '../components/richEditor'
 import FormLinker from 'form-linker'
 
@@ -37,9 +38,10 @@ const Home = () => {
         <section css={{width: "100%", display: "flex", flexWrap: "wrap", justifyContent: "center"}}>
           <div css={{width: 1000, padding: 20, display: "flex", flexDirection: "column"}}>
             <Content/>
-            <Editor
+            <Field
               formLinker={formLinker.current}
               name="editor"
+              type="editor"
               minHeight={150}
               height={590}
               maxHeight={800}
