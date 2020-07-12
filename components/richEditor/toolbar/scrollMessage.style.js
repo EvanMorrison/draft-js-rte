@@ -1,21 +1,30 @@
 import styled from '@emotion/styled';
-import { offColor as colorHelper } from 'off-color';
 
 export default styled.div`
   &.message {
+    flex: 1;
     transition: all 0.2s;
-    height: 0;
-    width: 100%;
-    background: ${props => colorHelper(props.theme.colors.warning).lighten(0.3).hex()};
-    text-align: center;
-    font-weight: bold;
+    border-radius: 0 0 3px 3px;
     opacity: 0;
+    height: 0;
+
+    div {
+      background: #ffcf8f;
+      text-align: center;
+      font-weight: bold;
+      font-size: 12px;
+      width: 100%;
+      height: 100%;
+    }
   }
 
+  
   &.message.show {
     opacity: 1;
-    height: 25px;
-    padding: 5px 0;
-    margin: 6px 0 -2px 0;
+    height: 17px;
+  }
+
+  &.message.scroll-bottom div {
+    opacity: 0.3;
   }
 `;

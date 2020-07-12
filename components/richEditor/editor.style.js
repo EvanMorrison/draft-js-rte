@@ -6,7 +6,6 @@ export default styled.div`
     padding: 12px;
     border: 1px solid ${props => props.theme.colors.richTextBorder};
     border-top: none;
-    border-radius: 0 0 3px 3px;
     overflow-y: auto;
     resize: vertical;
 

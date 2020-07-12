@@ -6,6 +6,7 @@ import PropTypes from 'prop-types';
 import RawHtmlStyle from './rawHtml.style';
 import React, { useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import ScrollMessage from './toolbar/scrollMessage';
+import StatusBar from './statusBar';
 import Textarea from '../atoms/textarea';
 import ToolbarStyle from './toolbar.style';
 import { stateFromHTML } from 'draft-js-import-html';
@@ -98,6 +99,7 @@ const RichEditor = React.forwardRef((props, ref) => {
   };
 
   const html = useRef(null);
+  const plainText = useRef(null);
 
   const exportStateToHTML = newEditorState => {
     const currentContent = newEditorState.getCurrentContent();
@@ -762,6 +764,7 @@ const RichEditor = React.forwardRef((props, ref) => {
       });
       setShowLinkPopover(showLinkPopover);
       setActiveStyles(activeStyles);
+      plainText.current = newEditorState.getCurrentContent().getPlainText();
       setEditorState(newEditorState);
     },
     [isImageActive, props.disabled]
@@ -1185,39 +1188,40 @@ const RichEditor = React.forwardRef((props, ref) => {
 
   const noToolbar = props.toolbar === 'none' || (isArray(props.toolbar) && props.toolbar[0] === 'none');
 
-  const renderToolbar = () => {
-    if (noToolbar) {
-      return !props.noScrollMessage && hasScrolling && <ScrollMessage />;
-    } else {
-      const selection = editorState.getSelection();
-      const block = editorState.getCurrentContent().getBlockForKey(selection.getStartKey());
-      const controlProps = {
-        activeStyles: activeStyles,
-        blockType: block.getType(),
-        blockData: block.getData(),
-        currentStyle: editorState.getSelection().getHasFocus() && editorState.getCurrentInlineStyle(),
-        editor: editor,
-        editorState: editorState,
-        openLinkForm: editLink,
-        hasScrolling: hasScrolling,
-        alignmentSelect: alignment => setAlignment(alignment),
-        blockDataToggle: data => toggleBlockData(data),
-        blockTypeSelect: type => setBlockType(type),
-        customListSelect: item => insertCustomListItem(item),
-        colorSelect: color => toggleInlineStyle(color),
-        editModeToggle: () => toggleEditMode(),
-        fontFamilySelect: font => toggleInlineStyle(font),
-        fontSizeSelect: size => toggleInlineStyle(size),
-        indentChange: action => setIndent(action),
-        inlineToggle: inlineStyle => toggleInlineStyle(inlineStyle),
-        insertImage: img => insertImage(img),
-        insertLink: link => insertLink(link),
-        insertTable: size => insertTable(size),
-        listToggle: listType => toggleListType(listType),
-      };
+  const [scrollBottom, setScrollBottom] = useState(false);
+  const handleScrolling = (e) => {
+    console.log(e.target.scrollHeight, e.target.scrollTop + e.target.clientHeight)
+    setScrollBottom(e.target.scrollTop + e.target.clientHeight + 12 >= e.target.scrollHeight);
+  }
 
-      return <Controls {...controlProps} {...props} />;
-    }
+  const renderToolbar = () => {
+    const selection = editorState.getSelection();
+    const block = editorState.getCurrentContent().getBlockForKey(selection.getStartKey());
+    const controlProps = {
+      activeStyles: activeStyles,
+      blockType: block.getType(),
+      blockData: block.getData(),
+      currentStyle: editorState.getSelection().getHasFocus() && editorState.getCurrentInlineStyle(),
+      editor: editor,
+      editorState: editorState,
+      openLinkForm: editLink,
+      alignmentSelect: alignment => setAlignment(alignment),
+      blockDataToggle: data => toggleBlockData(data),
+      blockTypeSelect: type => setBlockType(type),
+      customListSelect: item => insertCustomListItem(item),
+      colorSelect: color => toggleInlineStyle(color),
+      editModeToggle: () => toggleEditMode(),
+      fontFamilySelect: font => toggleInlineStyle(font),
+      fontSizeSelect: size => toggleInlineStyle(size),
+      indentChange: action => setIndent(action),
+      inlineToggle: inlineStyle => toggleInlineStyle(inlineStyle),
+      insertImage: img => insertImage(img),
+      insertLink: link => insertLink(link),
+      insertTable: size => insertTable(size),
+      listToggle: listType => toggleListType(listType),
+    };
+
+    return <Controls {...controlProps} {...props} />;
   };
 
   if (richMode) {
@@ -1234,6 +1238,7 @@ const RichEditor = React.forwardRef((props, ref) => {
           className={`rich-text-editor${noToolbar ? ' no-toolbar' : ''}`}
           onClick={setFocusToEnd}
           css={{ height, minHeight: props.minHeight, maxHeight: props.maxHeight }}
+          onScroll={handleScrolling}
         >
           <DraftStyles>
             <Editor
@@ -1258,6 +1263,7 @@ const RichEditor = React.forwardRef((props, ref) => {
             />
           </DraftStyles>
         </EditorStyle>
+        {!noToolbar && <StatusBar {...props} html={html.current ?? 0} text={plainText.current ?? 0}  hasScrolling={hasScrolling} scrollBottom={scrollBottom} />}
         {showLinkPopover && editor.current && (
           <LinkPopover editorRef={editor.current} editorState={editorState} editLink={handleClickEditLink} />
         )}

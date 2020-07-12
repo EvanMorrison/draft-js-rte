@@ -6,7 +6,6 @@ import ImageForm from './imageForm';
 import LinkForm from './linkForm';
 import ListContent from './basicList';
 import React from 'react';
-import ScrollMessage from './scrollMessage';
 import TableGrid from './tableGrid';
 import Translator from 'simple-translator';
 import { availableControls, controlSets } from '../utils/constants';
@@ -14,7 +13,7 @@ import { isNil } from 'lodash';
 
 const Controls = props => {
   const renderControls = () => {
-    let controls = isNil(props.toolbar) ? ['default', 'scrollMessage'] : [...props.toolbar, 'scrollMessage'];
+    let controls = isNil(props.toolbar) ? ['default'] : [...props.toolbar];
     controls = expandControlSets(controls);
     return renderControlGroups(controls);
   };
@@ -39,9 +38,6 @@ const Controls = props => {
       }
       if (availableControls[controlName]) {
         return controlRenderFunctions[availableControls[controlName].method](controlName, index);
-      }
-      if (controlName === 'scrollMessage') {
-        return !props.noScrollMessage && props.hasScrolling && <ScrollMessage key={'scroll-message'} />;
       }
       const { customControls } = props;
       if (React.isValidElement(customControls[controlName])) {
