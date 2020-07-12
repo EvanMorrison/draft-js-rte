@@ -14,7 +14,7 @@ const Checkbox = React.forwardRef(({ testid, ...props }, ref) => {
     }
   }
 
-  const iconName = props.checkStatus ? 'check-sld' : 'square-sld';
+  const iconName = props.checkStatus ? 'check-square-sld' : 'square-sld';
 
   const classes = [
     'checkbox',
