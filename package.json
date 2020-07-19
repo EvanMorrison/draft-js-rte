@@ -25,7 +25,7 @@
     "emotion-theming": "^10.0.27",
     "flex-item": "^3.1.0",
     "form-linker": "1.2.0",
-    "lodash": "^4.17.15",
+    "lodash": "^4.17.19",
     "next": "9.1.6",
     "off-color": "^2.0.0",
     "react": "16.12.0",
