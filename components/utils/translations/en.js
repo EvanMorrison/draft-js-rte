@@ -1,4 +1,4 @@
-import RichEditor from "../../richEditor/en";
+import RichEditor from "../../organisms/richEditor/en";
 
 export default {
   Citadel: {

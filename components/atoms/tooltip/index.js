@@ -8,7 +8,9 @@ const Tooltip = props => {
   // ref to the element the tooltip points to
   const anchorRef = useRef(null);
   // if the anchor is resized, update the tooltip positioning
-  const observerRef = useRef(
+  const observerRef = useRef(null);
+  useEffect(() => {
+    observerRef.current = 
     new ResizeObserver(() => {
       const { x, y } = mouseRef.current;
       const newAnchorRect = anchorRef.current.getBoundingClientRect();
@@ -31,7 +33,8 @@ const Tooltip = props => {
       }
       setAnchorBox(newAnchorRect);
     })
-  );
+  }, []);
+
   // ref to a container element the tooltip should not overflow to the left or right (for top and bottom positions only)
   const containerRef = useRef(null);
   // the amount by which a centered (top or bottom) tooltip would overflow outside the container.

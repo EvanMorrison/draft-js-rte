@@ -7,7 +7,7 @@ import Label from '../../atoms/label';
 import PropTypes from 'prop-types';
 // import RadioBtn from '../../molecules/radioBtn';
 import React, { useCallback, useEffect, useReducer, useRef } from 'react';
-import RichEditor from '../../richEditor';
+import RichEditor from '../..//organisms/richEditor';
 // import Select from '../../atoms/select';
 import Style from './field.style';
 // import SummernoteEditor from '../../organisms/summernote';

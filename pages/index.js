@@ -46,7 +46,6 @@ const Home = () => {
               maxHeight={800}
               placeholder="Enter your content here"
               toolbar={['withImages']}
-              tooltipOrientation="bottom"
               onChange={forceUpdate}
             />
             <h4 css={{marginTop: 30, marginBottom: 0}}>
