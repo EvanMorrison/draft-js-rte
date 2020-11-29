@@ -19,12 +19,12 @@ const Controls = props => {
   };
 
   const expandControlSets = controls => {
-    return(controls.flatMap(entry => {
-      if(Array.isArray(entry) && controlSets[entry]) {
-        return([controlSets[entry]]);
+    return controls.flatMap(entry => {
+      if (Array.isArray(entry) && controlSets[entry]) {
+        return [controlSets[entry]];
       }
-      return(controlSets[entry] || [entry]);
-    }));
+      return controlSets[entry] || [entry];
+    });
   };
 
   const renderControlGroups = (controls, id) => {
@@ -39,6 +39,7 @@ const Controls = props => {
       if (availableControls[controlName]) {
         return controlRenderFunctions[availableControls[controlName].method](controlName, index);
       }
+
       const { customControls } = props;
       if (React.isValidElement(customControls[controlName])) {
         return React.cloneElement(customControls[controlName], { key: controlName });
@@ -74,7 +75,7 @@ const Controls = props => {
         current = props.blockData.get('text-align');
       }
       if (controlName === 'blockType') {
-        current = props.blockType;
+        current = props.blockType === 'pasted-list-item' ? 'ordered-list-item' : props.blockType;
       }
       if (controlName === 'fontFamily') {
         current = props.activeStyles.fontFamily || '--';
@@ -136,8 +137,9 @@ const Controls = props => {
         style = { float: 'right' };
       }
       if (controlName === 'bulletList' || controlName === 'numberList') {
-        const blockType = controlName === 'bulletList' ? 'unordered-list-item' : 'ordered-list-item';
-        active = props.blockType === blockType;
+        const blockType =
+          controlName === 'bulletList' ? 'unordered-list-item' : ['ordered-list-item', 'pasted-list-item'];
+        active = blockType === props.blockType || (controlName === 'numberList' && blockType.includes(props.blockType));
       }
       const btnProps = {
         active,

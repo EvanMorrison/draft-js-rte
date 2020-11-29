@@ -2,16 +2,17 @@ import Controls from './toolbar/controls';
 import DraftStyles from './draftjs.style';
 import EditorStyle from './editor.style';
 import LinkPopover from './linkPopover';
+import Prism from 'prismjs';
+import codeviewStyle from './codeView.style';
 import PropTypes from 'prop-types';
 import RawHtmlStyle from './rawHtml.style';
 import React, { useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
-import ScrollMessage from './toolbar/scrollMessage';
 import StatusBar from './statusBar';
-import Textarea from '../../atoms/textarea';
 import ToolbarStyle from './toolbar.style';
+import useOnClickOutside from 'use-onclickoutside';
 import { stateFromHTML } from 'draft-js-import-html';
 import { stateToHTML } from 'draft-js-export-html';
-import { debounce, isArray, isNil, unionWith } from 'lodash';
+import { debounce, isArray, isNil, unionWith, kebabCase } from 'lodash';
 import { Map, OrderedSet } from 'immutable';
 import { Keys, MAX_LIST_DEPTH, MAX_INDENT_DEPTH } from './utils/constants';
 import {
@@ -45,6 +46,9 @@ const extendedBlockRenderMap = DefaultDraftBlockRenderMap.merge(customBlockRende
 const RichEditor = React.forwardRef((props, ref) => {
   const editor = useRef(null);
   const editorDOMRef = useRef(null);
+  const editorWrapperRef = useRef(null);
+  const linkPopoverRef = useRef(null);
+  const clickOutsideRef = useRef(false);
 
   // STATE
   const [editorState, setEditorState] = useState(EditorState.createEmpty());
@@ -73,19 +77,82 @@ const RichEditor = React.forwardRef((props, ref) => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (editorDOMRef.current) {
-      setHasScrolling(editorDOMRef.current.scrollHeight > editorDOMRef.current.clientHeight);
+      setHasScrolling(editorDOMRef.current.scrollHeight > editorDOMRef.current.clientHeight + 24);
     }
   });
+
+  // register a click occurring outside the editor, but not in link popovers,
+  // which are rendered outside the editor
+  useOnClickOutside(editorWrapperRef, e => {
+    if (!linkPopoverRef.current?.contains(e.target)) {
+      clickOutsideRef.current = true;
+    }
+  });
+
+  // used for pasting or dropping content into the editor
+  const addHtmlToDocument = (newHtml, currentEditorState = editorState) => {
+    if (!newHtml) return false;
+    if (!currentEditorState.getCurrentContent().hasText()) {
+      reset(newHtml);
+      return true;
+    } else {
+      let newEditorState = convertHtmlToEditorState(newHtml);
+      const newBlockMap = newEditorState.getCurrentContent().getBlockMap();
+
+      const newContent = Modifier.replaceWithFragment(
+        currentEditorState.getCurrentContent(),
+        currentEditorState.getSelection(),
+        newBlockMap
+      );
+      newEditorState = EditorState.push(currentEditorState, newContent, 'insert-fragment');
+      onChange(newEditorState);
+      const currentEditor = editor.current;
+      const hasFocus = editorState.getSelection().getHasFocus();
+      setTimeout(() => {
+        syncContenteditable(props.disabled);
+        currentEditor?.blur();
+        setTimeout(() => {
+          if (hasFocus) {
+            currentEditor?.focus();
+          }
+        });
+      });
+      return true;
+    }
+  };
+
+  const addTextToDocument = text => {
+    let contentState = editorState.getCurrentContent();
+    let selectionState = editorState.getSelection();
+    const currentStyle = editorState.getCurrentInlineStyle();
+    if (typeof text !== 'string') text = text.props?.children;
+    contentState = Modifier.replaceText(contentState, selectionState, text, currentStyle);
+    let newEditorState = EditorState.push(editorState, contentState, 'insert-characters');
+    const selectionFocus = selectionState.getFocusOffset();
+    const selectionAnchor = selectionState.getAnchorOffset();
+    selectionState = selectionState.merge({
+      focusOffset: selectionFocus + text.length,
+      anchorOffset: selectionAnchor + text.length,
+    });
+    newEditorState = EditorState.forceSelection(newEditorState, selectionState);
+    onChange(newEditorState);
+  };
 
   const blockStyle = block => {
     const type = block.getType();
     const depth = block.getDepth();
     const data = block.getData();
     const classes = [];
-    if (depth > 0 && type.includes('list-item')) {
+    if (depth > 0 && !type.includes('list-item')) {
       classes.push('indent' + depth);
     }
-    data.map((v, k) => {
+    if (type === 'pasted-list-item') {
+      const indent = data.get('margin-left') ?? '00';
+      if (indent.slice(0, 2) > 36) {
+        classes.push('indent1');
+      }
+    }
+    data.forEach((v, k) => {
       switch (k) {
         case 'text-align':
         case 'float':
@@ -99,12 +166,166 @@ const RichEditor = React.forwardRef((props, ref) => {
   };
 
   const html = useRef(null);
-  const plainText = useRef(null);
+  const plaintext = useRef(null);
 
-  const exportStateToHTML = newEditorState => {
-    const currentContent = newEditorState.getCurrentContent();
+  const convertEditorStateToHtml = (state = editorState) => {
+    const currentContent = state.getCurrentContent();
     const options = getStateToHtmlOptions(currentContent);
     const htmlContent = currentContent.hasText() ? stateToHTML(currentContent, options) : null;
+    return htmlContent;
+  };
+
+  // this is used by reset() and addHtmlToDocument() when pasting or dropping content into the editor.
+  const convertHtmlToEditorState = newHtml => {
+    // html conversion normally ignores <hr> tags, but using this character substitution it can be configured to preserve them.
+    const inputHtml = (newHtml ?? props.value ?? props.fl?.getValue(props.name) ?? '').replace(
+      /<hr\/?>/g,
+      '<div>---hr---</div>'
+    );
+
+    /**
+     * Special parsing for legacy Instascreen data and content pasted in from other sources (google docs, summernote, etc.)
+     *
+     * This code:
+     * 1. removes <style> tags which are sometime present from pasted word content.
+     * 2. Some content created in summernote or otherwise has text that's not wrapped in any html
+     * tag mixed with other content that is in tags. In the draft-js richEditor all the unwrapped
+     * text gets lumped together in one div at the start of the document. This code goes through and wraps
+     * those text nodes in <div> tags separately and in order with the rest of the content.
+     * 3. Finds tags that contain style white-space: pre-wrap and substitutes non-breaking space characters
+     * for spaces and <br> tags for newline characters so they get preserved when converted to draft.js state.
+     * 4. Finds block-level tags (div, p) inside <li> list items and <td> table cells and converts them to inline <span> elements,
+     * otherwise the div & p tags would take precedence and the list or table structure gets lost in the conversion.
+     */
+    const blockTags = [
+      'div',
+      'p',
+      'h1',
+      'h2',
+      'h3',
+      'h4',
+      'h5',
+      'h6',
+      'table',
+      'ol',
+      'ul',
+      'hr',
+      'pre',
+      'section',
+      'header',
+      'nav',
+      'main',
+      'blockquote',
+    ];
+    const domParser = new DOMParser();
+    const tempDoc = domParser.parseFromString(inputHtml, 'text/html');
+    const parsedHTML = tempDoc.querySelector('body');
+    let child = parsedHTML.firstChild;
+    if (parsedHTML.children.length === 1 && child.tagName === 'TABLE') {
+      child = document.createElement('br');
+      parsedHTML.insertBefore(child, parsedHTML.firstChild);
+      parsedHTML.appendChild(document.createElement('br'));
+    }
+    while (child) {
+      // remove Style tags
+      if (child.tagName === 'STYLE') {
+        const nextChild = child.nextSibling;
+        parsedHTML.removeChild(child);
+        child = nextChild;
+        continue;
+      }
+      // handle text content that is not within block elements
+      if (!blockTags.includes(child.tagName?.toLowerCase())) {
+        const wrapper = tempDoc.createElement('div');
+        let nextChild = child.nextSibling;
+        wrapper.appendChild(child);
+        while (nextChild && !blockTags.includes(nextChild.tagName?.toLowerCase())) {
+          const currentChild = nextChild;
+          nextChild = currentChild.nextSibling;
+          wrapper.appendChild(currentChild);
+        }
+        parsedHTML.insertBefore(wrapper, nextChild);
+        child = nextChild;
+      }
+
+      child = child?.nextSibling;
+    }
+
+    // recursive function to walk the full DOM tree, making modifications as needed
+    // to preserve formatting during conversion to internal state for draft.js
+    const traverse = (node, isNestedBlock) => {
+      if (!node) return;
+      // elements formatted with spacing and soft line-breaks
+      if (/white-space:\s*(pre|pre-wrap);?/.test(node.getAttribute('style'))) {
+        node.innerHTML = node.innerHTML
+          .replace(/\n/g, '<br>')
+          .replace(/\s{2}/g, '&nbsp;&nbsp;')
+          .replace(/&nbsp;\s/g, '&nbsp;&nbsp;');
+        let style = node.getAttribute('style');
+        style = style.replace(/white-space:\s*(pre|pre-wrap);?/, '');
+        node.setAttribute('style', style);
+      }
+      // replace block elements inside lists with inline <span> elements
+      if (isNestedBlock && ['DIV', 'P', 'INPUT'].includes(node.tagName)) {
+        const newNode = changeTag(node, 'span');
+        node.replaceWith(newNode);
+        node = newNode;
+      }
+      // If a nested table has a single row and cell, switch it to a span as a single cell's contents of the outer table
+      if (isNestedBlock && node.tagName === 'TABLE') {
+        if (node.firstElementChild.tagName === 'TBODY') {
+          const numRows = node.firstElementChild.children.length;
+          if (numRows === 1) {
+            const numCells = node.firstElementChild.firstElementChild.children.length;
+            if (numCells === 1) {
+              let cell = node.firstElementChild.firstElementChild.firstElementChild;
+              if (['DVI', 'P'].includes(cell.firstElementChild.tagName)) {
+                cell = cell.firstElementChild;
+              }
+              const newNode = changeTag(cell, 'span');
+              node.replaceWith(newNode);
+            }
+          }
+        }
+      }
+      traverse(node.nextElementSibling, isNestedBlock);
+      isNestedBlock = isNestedBlock || node.tagName === 'LI' || node.tagName === 'TD' || node.tagName === 'TH';
+      traverse(node.firstElementChild, isNestedBlock);
+    };
+
+    traverse(parsedHTML.firstElementChild);
+
+    // function used within traverse() for converting block elements to inline span elements
+    function changeTag(element, tag) {
+      // prepare the elements
+      const newElem = document.createElement(tag);
+      const clone = element.cloneNode(true);
+      // move the children from the clone to the new element
+      while (clone.firstChild) {
+        newElem.appendChild(clone.firstChild);
+      }
+      // copy the attributes
+      for (const attr of clone.attributes) {
+        if (attr.name === 'value') {
+          newElem.textContent = attr.value;
+        } else {
+          newElem.setAttribute(attr.name, attr.value);
+        }
+      }
+      return newElem;
+    }
+
+    const s = new XMLSerializer();
+    const newContent = s.serializeToString(parsedHTML);
+    // end special parsing
+
+    let newEditorState = EditorState.createWithContent(stateFromHTML(newContent, stateFromHtmlOptions));
+    newEditorState = EditorState.moveSelectionToEnd(newEditorState);
+    return supplementalCustomBlockStyleFn(newEditorState);
+  };
+
+  const exportStateToHTML = newEditorState => {
+    const htmlContent = convertEditorStateToHtml(newEditorState);
     html.current = htmlContent;
     props.onChange(htmlContent);
   };
@@ -114,6 +335,9 @@ const RichEditor = React.forwardRef((props, ref) => {
   };
 
   const handleBeforeInput = (chars, newEditorState) => {
+    if (props.maxLength && html.current?.length >= props.maxLength) {
+      return 'handled';
+    }
     const selection = newEditorState.getSelection();
     if (!selection.isCollapsed()) {
       return handleKeypressWhenSelectionNotCollapsed(newEditorState, chars);
@@ -153,14 +377,15 @@ const RichEditor = React.forwardRef((props, ref) => {
   const handleDrop = (selection, data, isInternal) => {
     // when dropping text into a table cell only allow plain text
     // to be inserted or the table will become corrupted
-    const text = data.data.getData("text");
+    const text = data.data.getData('text');
     let content = editorState.getCurrentContent();
-    let block = content.getBlockForKey(selection.getStartKey());
-    if(block.getType() === "table") {
+    const block = content.getBlockForKey(selection.getStartKey());
+    if (block.getType() === 'table') {
       content = Modifier.insertText(content, selection, text);
-      onChange(EditorState.push(editorState, content, "insert-characters"));
-      return(true);
+      onChange(EditorState.push(editorState, content, 'insert-characters'));
+      return true;
     }
+    return addHtmlToDocument(data.data.getData('text/html'));
   };
 
   const handleKeyCommand = (command, newEditorState) => {
@@ -223,6 +448,14 @@ const RichEditor = React.forwardRef((props, ref) => {
           contentState = Modifier.removeRange(contentState, selection, 'backward');
           onChange(EditorState.push(newEditorState, contentState, 'remove-range'));
           return 'handled';
+        } else if (
+          collapsed &&
+          offset === 0 &&
+          ['pasted-list-item', 'ordered-list-item', 'unordered-list-item'].includes(currentBlockType)
+        ) {
+          contentState = Modifier.setBlockType(contentState, selectionState, 'unstyled');
+          onChange(EditorState.push(newEditorState, contentState, 'change-block-type'));
+          return 'handled';
         } else if (!collapsed) {
           return handleKeypressWhenSelectionNotCollapsed(newEditorState);
         } else {
@@ -270,7 +503,7 @@ const RichEditor = React.forwardRef((props, ref) => {
   const handleKeypressWhenSelectionNotCollapsed = (newEditorState = editorState, chars = '') => {
     let selection = newEditorState.getSelection();
     let content = newEditorState.getCurrentContent();
-    let startKey = selection.getStartKey();
+    const startKey = selection.getStartKey();
     const startBlock = content.getBlockForKey(startKey);
     const endKey = selection.getEndKey();
     const endBlock = content.getBlockForKey(endKey);
@@ -319,6 +552,10 @@ const RichEditor = React.forwardRef((props, ref) => {
         blockMap = blockMap.filter(
           (block, key) => !blocks.has(key) || (block.getType() !== 'table' && block.getText())
         );
+        if (!blockMap.size) {
+          const key = genKey();
+          blockMap = blockMap.merge([[key, new ContentBlock({ key, type: 'unstyled', text: '', data: Map() })]]);
+        }
         break;
       case firstCell && endBlock.getType() !== 'table': {
         // remove all selected blocks, but preserve inline style/entities in partial block after selection
@@ -376,7 +613,7 @@ const RichEditor = React.forwardRef((props, ref) => {
       }
       case startBlock.getType() !== 'table' && endBlock.getType() === 'table': {
         //
-        if (prevBlock.getType() === 'table') {
+        if (prevBlock?.getType() === 'table') {
           const separatorBlock = blocks.first().set('text', ' ');
           blocks = blocks.merge([[separatorBlock.getKey(), separatorBlock]]);
         }
@@ -409,7 +646,7 @@ const RichEditor = React.forwardRef((props, ref) => {
       ? startKey
       : blockMap.has(endKey)
       ? endKey
-      : prevBlock?.getKey() || nextBlock?.getKey();
+      : prevBlock?.getKey() || nextBlock?.getKey() || blockMap.first().getKey();
     selection = SelectionState.createEmpty(selectionKey);
     selection = selection.merge({
       anchorKey: selectionKey,
@@ -424,36 +661,85 @@ const RichEditor = React.forwardRef((props, ref) => {
     return 'handled';
   };
 
-  const handlePastedText = (text, html, editorState) => {
+  const handlePastedText = (text, pastedHtml, editorState) => {
+    if (props.maxLength && html.current?.length >= props.maxLength) {
+      return true;
+    }
+
     // when pasting into a table cell only allow plain text
     // to be inserted or the table will become corrupted
     let content = editorState.getCurrentContent();
-    let selection = editorState.getSelection();
-    let block = content.getBlockForKey(selection.getStartKey());
-    if(block.getType() === "table") {
-      content = Modifier.insertText(content, selection, text);
-      onChange(EditorState.push(editorState, content, "insert-characters"));
-      return(true);
+    const selection = editorState.getSelection();
+    const block = content.getBlockForKey(selection.getStartKey());
+    if (block.getType() === 'table') {
+      if (selection.isCollapsed()) {
+        content = Modifier.insertText(content, selection, text);
+      } else {
+        content = Modifier.replaceText(content, selection, text);
+      }
+      onChange(EditorState.push(editorState, content, 'insert-characters'));
+      return true;
     }
+    return addHtmlToDocument(pastedHtml, editorState);
+  };
+
+  const handlePastedFiles = files => {
+    insertImage({ imgFile: files[0] });
   };
 
   const handleReturn = (e, editorState) => {
+    if (props.maxLength && html.current?.length >= props.maxLength) {
+      return 'handled';
+    }
     if (e.shiftKey) {
       const newEditorState = RichUtils.insertSoftNewline(editorState);
       const contentState = Modifier.replaceText(newEditorState.getCurrentContent(), newEditorState.getSelection(), ' ');
       onChange(EditorState.push(newEditorState, contentState, 'insert-characters'));
       return 'handled';
-    }
-    if (RichUtils.getCurrentBlockType(editorState) === 'table') {
+    } else if (RichUtils.getCurrentBlockType(editorState) === 'table') {
       onChange(RichUtils.insertSoftNewline(editorState));
+      return 'handled';
+    } else if (
+      RichUtils.getCurrentBlockType(editorState) === 'pasted-list-item' &&
+      editorState.getSelection().isCollapsed()
+    ) {
+      let content = editorState.getCurrentContent();
+      let selection = editorState.getSelection();
+      let currentBlock = content.getBlockForKey(selection.getAnchorKey());
+      content = Modifier.splitBlock(content, selection);
+      let newEditorState = EditorState.push(editorState, content, selection, 'split-block');
+      let nextBlock = content.getBlockAfter(selection.getAnchorKey());
+      const key = nextBlock.getKey();
+      while (nextBlock?.getType() === 'pasted-list-item') {
+        let data = currentBlock.getData();
+        data = data.merge({ listStart: +data.get('listStart') > 0 ? data.get('listStart') + 1 : 0 });
+        content = Modifier.setBlockData(
+          newEditorState.getCurrentContent(),
+          SelectionState.createEmpty(nextBlock.getKey()),
+          data
+        );
+        newEditorState = EditorState.push(newEditorState, content, 'change-block-data');
+        currentBlock = content.getBlockForKey(nextBlock.getKey());
+        nextBlock = content.getBlockAfter(nextBlock.getKey());
+      }
+      selection = selection.merge({
+        anchorKey: key,
+        focusKey: key,
+        anchorOffset: 0,
+        focusOffset: 0,
+        hasFocus: true,
+      });
+      newEditorState = EditorState.forceSelection(newEditorState, selection);
+      onChange(newEditorState);
       return 'handled';
     }
     return 'not-handled';
   };
 
   const handleTabInTable = (direction = 'next', collapsed = false) => {
+    let newEditorState = editorState;
     let selection = editorState.getSelection();
-    const contentState = editorState.getCurrentContent();
+    let contentState = editorState.getCurrentContent();
     let targetKey = selection.getAnchorKey();
     let targetBlock = contentState.getBlockForKey(targetKey);
     do {
@@ -464,7 +750,18 @@ const RichEditor = React.forwardRef((props, ref) => {
       }
       targetKey = targetBlock && targetBlock.getKey();
     } while (targetKey && ['atomic', 'horizontal-rule'].includes(targetBlock.getType()));
-    if (!targetBlock) {
+    if (!targetBlock && direction === 'next') {
+      selection = selection.merge({
+        anchorOffset: contentState.getBlockForKey(selection.getAnchorKey()).getLength(),
+        focusOffset: contentState.getBlockForKey(selection.getAnchorKey()).getLength(),
+      });
+      contentState = Modifier.splitBlock(contentState, selection);
+      targetBlock = contentState.getLastBlock();
+      selection = SelectionState.createEmpty(targetBlock.getKey());
+      contentState = Modifier.setBlockType(contentState, selection, 'unstyled');
+      targetBlock = contentState.getLastBlock();
+      newEditorState = EditorState.push(editorState, contentState, 'split-block');
+    } else if (!targetBlock) {
       targetBlock = contentState.getBlockForKey(selection.getAnchorKey());
     }
     const isTargetTable = targetBlock.getType() === 'table' && !collapsed;
@@ -474,26 +771,7 @@ const RichEditor = React.forwardRef((props, ref) => {
       anchorOffset: isTargetTable || direction === 'next' ? 0 : endOffset,
       focusOffset: isTargetTable || direction === 'previous' ? endOffset : 0,
     });
-    onChange(EditorState.forceSelection(editorState, selection));
-  };
-
-  const insertCustomListItem = item => {
-    let contentState = editorState.getCurrentContent();
-    let selectionState = editorState.getSelection();
-    const currentStyle = editorState.getCurrentInlineStyle();
-    if (typeof item !== 'string') item = item.props.children;
-    contentState = contentState.createEntity('KEYWORD', 'MUTABLE', { keyword: item });
-    const entityKey = contentState.getLastCreatedEntityKey();
-    contentState = Modifier.replaceText(contentState, selectionState, item, currentStyle, entityKey);
-    let newEditorState = EditorState.push(editorState, contentState, 'insert-characters');
-    const selectionFocus = selectionState.getFocusOffset();
-    const selectionAnchor = selectionState.getAnchorOffset();
-    selectionState = selectionState.merge({
-      focusOffset: selectionFocus + item.length,
-      anchorOffset: selectionAnchor + item.length,
-    });
-    newEditorState = EditorState.forceSelection(newEditorState, selectionState);
-    onChange(newEditorState);
+    onChange(EditorState.forceSelection(newEditorState, selection));
   };
 
   const newImgFile = useRef(null);
@@ -582,7 +860,8 @@ const RichEditor = React.forwardRef((props, ref) => {
       focusOffset: offset,
       anchorOffset: offset,
     });
-    // refocus on the editor content, update editorState with the selection point set to the end of the link text, & styling for next inserted characters to match non-link text
+    // refocus on the editor content, update editorState with the selection point set to the end of the link text,
+    // & styling for next inserted characters to match non-link text
     editor.current.focus();
     newEditorState = EditorState.forceSelection(newEditorState, newSelection);
     newEditorState = EditorState.setInlineStyleOverride(newEditorState, OrderedSet(currentStyles));
@@ -741,17 +1020,17 @@ const RichEditor = React.forwardRef((props, ref) => {
         setIsImageActive(isImageActive => !isImageActive);
       }
 
-      let showLinkPopover = false;
+      let linkPopoverOpen = false;
       if (selection.isCollapsed()) {
         const blockKey = selection.getAnchorKey();
         const offset = selection.getAnchorOffset();
         const contentState = newEditorState.getCurrentContent();
         const block = contentState.getBlockForKey(blockKey);
-        const entityKey = block.getEntityAt(offset);
-        if (entityKey) {
+        const entityKey = block?.getEntityAt(offset);
+        if (entityKey && !clickOutsideRef.current) {
           const entity = contentState.getEntity(entityKey);
           if (entity.get('type') === 'LINK' && !props.disabled) {
-            showLinkPopover = true;
+            linkPopoverOpen = true;
           }
         }
       }
@@ -762,9 +1041,9 @@ const RichEditor = React.forwardRef((props, ref) => {
         const [type, value] = s.split('.');
         activeStyles[type] = value;
       });
-      setShowLinkPopover(showLinkPopover);
+      setShowLinkPopover(linkPopoverOpen);
       setActiveStyles(activeStyles);
-      plainText.current = newEditorState.getCurrentContent().getPlainText();
+      plaintext.current = newEditorState.getCurrentContent().getPlainText();
       setEditorState(newEditorState);
     },
     [isImageActive, props.disabled]
@@ -793,6 +1072,11 @@ const RichEditor = React.forwardRef((props, ref) => {
     props.onBlur();
   };
 
+  const onFocus = () => {
+    clickOutsideRef.current = false;
+    props.onFocus();
+  };
+
   const removeSizeDataFromBlock = (newEditorState, block) => {
     const data = block.getData().delete('height').delete('width');
     block = block.set('data', data);
@@ -804,80 +1088,46 @@ const RichEditor = React.forwardRef((props, ref) => {
     return newEditorState;
   };
 
+  const syncContenteditable = disabled => {
+    if (disabled) {
+      const editableDivs = editor.current?.editor.querySelectorAll('[contenteditable="true"]') ?? [];
+      editableDivs.forEach(div => {
+        div.setAttribute('contenteditable', 'false');
+        div.setAttribute('data-editable-disabled', 'true');
+      });
+    } else if (!disabled) {
+      const editableDivs = editor.current?.editor.querySelectorAll('[data-editable-disabled="true"]') ?? [];
+      editableDivs.forEach(div => {
+        div.setAttribute('contenteditable', 'true');
+        div.removeAttribute('data-editable-disabled');
+      });
+    }
+  };
+
   const reset = newHtml => {
     if (newHtml === html.current) return;
 
-    // html conversion normally ignores <hr> tags, but using this character substitution it can be configured to preserve them.
-    const inputHTML = (newHtml ?? props.value ?? props.fl?.getValue(props.name) ?? '').replace(
-      /<hr\/?>/g,
-      '<div>---hr---</div>'
-    );
-
-    /**
-     * Special parsing for legacy Instascreen data.
-     *
-     * This code:
-     * 1. removes <style> tags which are sometime present from pasted word content.
-     * 2. Some content created in summernote or otherwise has text that's not wrapped in any html
-     * tag mixed with other content that is in tags. In the draft-js richEditor all the unwrapped
-     * text gets lumped together in one div at the start of the document.goes through and wraps
-     * those text nodes in <div> tags separately and in order with the rest of the content.
-     * 3. Finds tags that contain style white-space: pre-wrap and substitutes non-breaking space characters
-     * for spaces and <br> tags for newline characters so they get preserved when converted to draft.js state.
-     */
-    const domParser = new DOMParser();
-    const tempDoc = domParser.parseFromString(inputHTML, 'text/html');
-    const parsedHTML = tempDoc.querySelector('body');
-    let child = parsedHTML.firstChild;
-    while (child) {
-      let newChild;
-      if (child.tagName === 'STYLE') {
-        newChild = child.nextSibling;
-        parsedHTML.removeChild(child);
-        child = newChild;
-        continue;
-      }
-      if (!child.tagName || child.tagName === 'BR') {
-        newChild = tempDoc.createElement('div');
-        const clone = child.cloneNode(true);
-        newChild.appendChild(clone);
-        parsedHTML.insertBefore(newChild, child.nextSibling);
-        parsedHTML.removeChild(child);
-      }
-      child = (newChild || child).nextSibling;
+    let newEditorState = convertHtmlToEditorState(newHtml);
+    if (newHtml) {
+      newEditorState = EditorState.moveFocusToEnd(newEditorState);
+    } else if (newHtml === null) {
+      newEditorState = moveSelectionToStart(newEditorState);
     }
-    if (inputHTML.includes('white-space:')) {
-      const traverse = node => {
-        if (!node) return;
-        if (/white-space:\s*(pre|pre-wrap);?/.test(node.getAttribute('style'))) {
-          node.innerHTML = node.innerHTML
-            .replace(/\n/g, '<br>')
-            .replace(/\s{2}/g, '&nbsp;&nbsp;')
-            .replace(/&nbsp;\s/g, '&nbsp;&nbsp;');
-          let style = node.getAttribute('style');
-          style = style.replace(/white-space:\s*(pre|pre-wrap);?/, '');
-          node.setAttribute('style', style);
-        }
-        traverse(node.firstElementChild);
-        traverse(node.nextElementSibling);
-      };
-      traverse(parsedHTML.firstElementChild);
-    }
-    const s = new XMLSerializer();
-    const newContent = s.serializeToString(parsedHTML);
-    // end special parsing
-
-    let newEditorState = EditorState.createWithContent(stateFromHTML(newContent, stateFromHtmlOptions));
-    newEditorState = EditorState.moveSelectionToEnd(newEditorState);
-    onChange(supplementalCustomBlockStyleFn(newEditorState));
+    onChange(newEditorState);
+    // Resetting forces the editor to take focus, so here we check if the editorState
+    // had focus before the reset() and if not then remove focus again.
+    // Also keep the contenteditable state in sync with props.disabled because
+    // reset() leaves all contenteditable === true.
+    const hasFocus = editorState.getSelection().getHasFocus();
+    const currentEditor = editor.current;
     setTimeout(() => {
-      // this is a fix for tables. Rendering tables forces the editor to take focus.
-      // Here we check if the editorState before the onChange completes had focus
-      // and if not then remove focus again after the update
-      const selection = editorState.getSelection();
-      if (!selection.getHasFocus() && editor.current) {
-        editor.current.blur();
-      }
+      syncContenteditable(props.disabled);
+      currentEditor?.blur();
+      setTimeout(() => {
+        if (hasFocus) {
+          currentEditor?.focus();
+        }
+      });
     });
   };
 
@@ -897,12 +1147,18 @@ const RichEditor = React.forwardRef((props, ref) => {
   useImperativeHandle(ref, () => ({
     focus: () => focus(),
     blur: () => editor.current.blur(),
-    reset: newHtml => reset(newHtml),
+    reset: newHtml => reset(newHtml), // replaces entire content of editor with new content created from the html
     getPlainText: delimiter => getPlainText(delimiter),
-    insertCustomListItem: item => insertCustomListItem(item),
+    insertCustomListItem: item => addTextToDocument(item), // an alias for insert text, kept for backward compatability
+    insertText: text => addTextToDocument(text), // inserts plain text at the current selection point in the editor
+    insertHtml: additionalHtml => addHtmlToDocument(additionalHtml), // inserts html at the current selection point in the editor
     toggleEditMode: () => toggleEditMode(),
     addEventListener: (event, fn) => editorDOMRef.current.addEventListener(event, fn),
     removeEventListener: (event, fn) => editorDOMRef.current.removeEventListener(event, fn),
+    getEditorRef: () => editor.current,
+    moveSelectionToStart: () => {
+      onChange(moveSelectionToStart(editorState));
+    },
   }));
 
   const setAlignment = alignment => {
@@ -1033,7 +1289,7 @@ const RichEditor = React.forwardRef((props, ref) => {
       .concat([[endKey, blockMap.get(endKey)]])
       .map(block => {
         const depth = block.getDepth();
-        const maxDepth = block.getType().indexOf('list-item') > -1 ? listMax : indentMax;
+        const maxDepth = block.getType().includes('list-item') ? listMax : indentMax;
         const newDepth = setDepth !== undefined ? setDepth : Math.max(0, Math.min(depth + adjustment, maxDepth));
         return block.set('depth', newDepth);
       });
@@ -1049,15 +1305,20 @@ const RichEditor = React.forwardRef((props, ref) => {
   };
 
   const setSelectionIfNone = currentEditorState => {
-    let selection = currentEditorState.getSelection();
+    const selection = currentEditorState.getSelection();
     if (!selection.getHasFocus()) {
-      const content = currentEditorState.getCurrentContent();
-      const firstBlock = content.getFirstBlock();
-      const key = firstBlock.getKey();
-      selection = SelectionState.createEmpty(key);
-      return EditorState.forceSelection(currentEditorState, selection);
+      return moveSelectionToStart(currentEditorState);
     }
     return currentEditorState;
+  };
+
+  const moveSelectionToStart = currentEditorState => {
+    let selection = currentEditorState.getSelection();
+    const content = currentEditorState.getCurrentContent();
+    const firstBlock = content.getFirstBlock();
+    const key = firstBlock.getKey();
+    selection = SelectionState.createEmpty(key);
+    return EditorState.forceSelection(currentEditorState, selection);
   };
 
   const supplementalCustomBlockStyleFn = newEditorState => {
@@ -1067,12 +1328,9 @@ const RichEditor = React.forwardRef((props, ref) => {
     const blocks = blockMap.map(block => {
       let depth = block.getData().get('depth');
       const margin = block.getData().get('margin-left');
-      if (margin || depth) {
+      if ((margin && /em$/.test(margin)) || depth) {
         depth = depth !== undefined ? depth : parseInt(margin.replace(/rem|em/, '') / 2.5, 10);
         block = block.set('depth', depth);
-        let data = block.getData();
-        data = data.remove('margin-left');
-        block = block.set('data', data);
       }
 
       block.findEntityRanges(
@@ -1128,6 +1386,7 @@ const RichEditor = React.forwardRef((props, ref) => {
       setHeight(currentHeight);
       inTextMode.current = true;
     } else {
+      props.onChange(codeviewRef.current?.textContent);
       setRichMode(true);
       setHeight(props.height ? height : 'auto');
     }
@@ -1136,12 +1395,14 @@ const RichEditor = React.forwardRef((props, ref) => {
   useEffect(() => {
     if (richMode && inTextMode.current) {
       inTextMode.current = false;
-      reset();
+      reset(null);
     }
   }, [richMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const toggleInlineStyle = inlineStyle => {
     let newEditorState = setSelectionIfNone(editorState);
+
+    if (/^fontSize\.\d{1,2}$/.test(inlineStyle)) inlineStyle += 'pt';
     // if the new style is a compound style type (fontFamily, fontSize, color, or backgroundColor) and the current style includes the same type,
     // remove the current matching style type before turning on the new style.
     const existingMatch = newEditorState
@@ -1152,6 +1413,21 @@ const RichEditor = React.forwardRef((props, ref) => {
     if (existingMatch) {
       newEditorState = RichUtils.toggleInlineStyle(newEditorState, existingMatch);
     }
+
+    // deal with style attributes imported from html as a string
+    let key = kebabCase(Object.keys(customStyleMap[inlineStyle] ?? {})[0]);
+    if (!key && inlineStyle.endsWith('.unset')) key = kebabCase(inlineStyle.split('.')[0]);
+    newEditorState
+      .getCurrentInlineStyle()
+      .filter(style => style.includes(':'))
+      .filter(style => key && style.includes(key))
+      .forEach(style => {
+        const rexp = new RegExp(`${key}:\\s+(.*?;+\\s+|.*$)`);
+        const newString = style.replace(rexp, '');
+        newEditorState = RichUtils.toggleInlineStyle(newEditorState, style); // remove the full style string
+        newEditorState = RichUtils.toggleInlineStyle(newEditorState, newString); // add back the modified string with the conflicting style removed
+      });
+
     if (inlineStyle.endsWith('unset')) {
       onChange(newEditorState);
     } else {
@@ -1167,65 +1443,79 @@ const RichEditor = React.forwardRef((props, ref) => {
     onChange(RichUtils.toggleBlockType(editorState, blockType));
   };
 
+  // for pasted-list-item block-type, need to set certain attributes on the ol parent.
+  useEffect(() => {
+    const listItems = editorDOMRef.current.querySelectorAll('[data-start]');
+    listItems.forEach(item => {
+      const list = item.closest('ol');
+      list.setAttribute('start', item.getAttribute('data-start'));
+      list.setAttribute('style', 'margin-left: 36pt; ' + item.getAttribute('data-list-style'));
+      list.setAttribute('data-list', 'true');
+    });
+  });
+
   const blockRendererFn = getBlockRendererFn(editor.current, getEditorState, onChange);
 
   // custom blockRendererFn does not update editable state of custom blocks when props.disabled changes, so handle it here
   useEffect(() => {
-    if (props.disabled) {
-      const editableDivs = editor.current.editor.querySelectorAll(`[contenteditable='${props.disabled}']`);
-      editableDivs.forEach(div => {
-        div.setAttribute('contenteditable', 'false');
-        div.setAttribute('data-editable-disabled', 'true');
-      });
-    } else if (!props.disabled) {
-      const editableDivs = editor.current.editor.querySelectorAll("[data-editable-disabled='true']");
-      editableDivs.forEach(div => {
-        div.setAttribute('contenteditable', 'true');
-        div.removeAttribute('data-editable-disabled');
-      });
-    }
+    syncContenteditable(props.disabled);
   }, [props.disabled]);
 
   const noToolbar = props.toolbar === 'none' || (isArray(props.toolbar) && props.toolbar[0] === 'none');
 
+  const [scrollTop, setScrollTop] = useState(false);
   const [scrollBottom, setScrollBottom] = useState(false);
-  const handleScrolling = (e) => {
+  const handleScrolling = e => {
     setScrollBottom(e.target.scrollTop + e.target.clientHeight + 12 >= e.target.scrollHeight);
-  }
+    setScrollTop(e.target.scrollTop === 0);
+  };
+  const codeviewRef = useRef(null);
 
   const renderToolbar = () => {
-    const selection = editorState.getSelection();
-    const block = editorState.getCurrentContent().getBlockForKey(selection.getStartKey());
-    const controlProps = {
-      activeStyles: activeStyles,
-      blockType: block.getType(),
-      blockData: block.getData(),
-      currentStyle: editorState.getSelection().getHasFocus() && editorState.getCurrentInlineStyle(),
-      editor: editor,
-      editorState: editorState,
-      openLinkForm: editLink,
-      alignmentSelect: alignment => setAlignment(alignment),
-      blockDataToggle: data => toggleBlockData(data),
-      blockTypeSelect: type => setBlockType(type),
-      customListSelect: item => insertCustomListItem(item),
-      colorSelect: color => toggleInlineStyle(color),
-      editModeToggle: () => toggleEditMode(),
-      fontFamilySelect: font => toggleInlineStyle(font),
-      fontSizeSelect: size => toggleInlineStyle(size),
-      indentChange: action => setIndent(action),
-      inlineToggle: inlineStyle => toggleInlineStyle(inlineStyle),
-      insertImage: img => insertImage(img),
-      insertLink: link => insertLink(link),
-      insertTable: size => insertTable(size),
-      listToggle: listType => toggleListType(listType),
-    };
+    if (noToolbar) {
+      return null;
+    } else {
+      const selection = editorState.getSelection();
+      const block = editorState.getCurrentContent().getBlockForKey(selection.getStartKey());
+      const controlProps = {
+        activeStyles: activeStyles,
+        blockType: block.getType(),
+        blockData: block.getData(),
+        currentStyle: editorState.getSelection().getHasFocus() && editorState.getCurrentInlineStyle(),
+        editor: editor,
+        editorState: editorState,
+        openLinkForm: editLink,
+        alignmentSelect: alignment => setAlignment(alignment),
+        blockDataToggle: data => toggleBlockData(data),
+        blockTypeSelect: type => setBlockType(type),
+        customListSelect: item => addTextToDocument(item),
+        colorSelect: color => toggleInlineStyle(color),
+        editModeToggle: () => toggleEditMode(),
+        fontFamilySelect: font => toggleInlineStyle(font),
+        fontSizeSelect: size => toggleInlineStyle(size),
+        indentChange: action => setIndent(action),
+        inlineToggle: inlineStyle => toggleInlineStyle(inlineStyle),
+        insertImage: img => insertImage(img),
+        insertLink: link => insertLink(link),
+        insertTable: size => insertTable(size),
+        listToggle: listType => toggleListType(listType),
+      };
 
-    return <Controls {...controlProps} {...props} />;
+      return <Controls {...controlProps} {...props} />;
+    }
   };
+
+  const editorClasses = [
+    'rich-text-editor',
+    noToolbar && 'no-toolbar',
+    !props.maxLength && props.noScrollMessage && 'no-statusbar',
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   if (richMode) {
     return (
-      <div id={props.name}>
+      <div id={props.name} ref={editorWrapperRef} onClick={() => (clickOutsideRef.current = false)}>
         <ToolbarStyle
           className='rich-text-toolbar'
           maxDropdownHeight={Math.min(editorDOMRef.current?.getBoundingClientRect().height + 50 || 470, 570)}
@@ -1234,7 +1524,7 @@ const RichEditor = React.forwardRef((props, ref) => {
           {renderToolbar()}
         </ToolbarStyle>
         <EditorStyle
-          className={`rich-text-editor${noToolbar ? ' no-toolbar' : ''}`}
+          className={editorClasses}
           onClick={setFocusToEnd}
           css={{ height, minHeight: props.minHeight, maxHeight: props.maxHeight }}
           onScroll={handleScrolling}
@@ -1253,18 +1543,33 @@ const RichEditor = React.forwardRef((props, ref) => {
               handleDrop={(selection, data, isInternal) => handleDrop(selection, data, isInternal)}
               handleKeyCommand={(command, editorState) => handleKeyCommand(command, editorState)}
               handlePastedText={(text, html, editorState) => handlePastedText(text, html, editorState)}
+              handlePastedFiles={files => handlePastedFiles(files)}
               handleReturn={(e, editorState) => handleReturn(e, editorState)}
               keyBindingFn={e => mapKeyToEditorCommand(e)}
               onChange={editorState => onChange(editorState)}
-              onFocus={() => props.onFocus()}
+              onFocus={onFocus}
               onBlur={onBlur}
               readOnly={props.disabled}
             />
           </DraftStyles>
         </EditorStyle>
-        {!noToolbar && <StatusBar {...props} html={html.current ?? 0} text={plainText.current ?? 0}  hasScrolling={hasScrolling} scrollBottom={scrollBottom} />}
+        {(props.maxLength || !props.noScrollMessage) && (
+          <StatusBar
+            {...props}
+            html={html.current}
+            text={plaintext.current}
+            hasScrolling={hasScrolling}
+            scrollTop={scrollTop}
+            scrollBottom={scrollBottom}
+          />
+        )}
         {showLinkPopover && editor.current && (
-          <LinkPopover editorRef={editor.current} editorState={editorState} editLink={handleClickEditLink} />
+          <LinkPopover
+            ref={linkPopoverRef}
+            editorRef={editor.current}
+            editorState={editorState}
+            editLink={handleClickEditLink}
+          />
         )}
       </div>
     );
@@ -1278,13 +1583,32 @@ const RichEditor = React.forwardRef((props, ref) => {
             tooltipOrientation={props.tooltipOrientation}
           />
         </ToolbarStyle>
-        <Textarea className='public-DraftEditor-content' rows={height / 14} {...props} />
+        <div css={codeviewStyle}>
+          <pre
+            ref={codeviewRef}
+            className='language-html'
+            css={theme => ({
+              margin: 0,
+              resize: 'vertical',
+              overflowY: 'auto',
+              border: `1px solid ${theme.colors.richTextBorder}`,
+              borderTop: 'none',
+              borderRadius: '0 0 3px 3px',
+              height,
+            })}
+          >
+            <div
+              onBlur={() => props.onChange(codeviewRef.current.textContent)}
+              contentEditable='true'
+              dangerouslySetInnerHTML={{ __html: Prism.highlight(props.value ?? '', Prism.languages.html, 'html') }}
+            ></div>
+          </pre>
+        </div>
       </RawHtmlStyle>
     );
   }
 });
 
-RichEditor.componentDescription = 'Rich Text Editor';
 RichEditor.componentKey = 'richEditor';
 RichEditor.componentName = 'RichEditor';
 RichEditor.displayName = 'RichEditor';

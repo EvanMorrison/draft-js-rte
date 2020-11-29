@@ -6,12 +6,20 @@ export default styled.div`
     padding: 12px;
     border: 1px solid ${props => props.theme.colors.richTextBorder};
     border-top: none;
+    border-bottom: none;
     overflow-y: auto;
     resize: vertical;
 
     &.no-toolbar {
       border-top: 1px solid ${props => props.theme.colors.richTextBorder};
-      border-radius: 3px;
+      border-top-left-radius: 3px;
+      border-top-right-radius: 3px;
+    }
+
+    &.no-statusbar {
+      border-bottom: 1px solid ${props => props.theme.colors.richTextBorder};
+      border-bottom-left-radius: 3px;
+      border-bottom-right-radius: 3px;
     }
 
     section {

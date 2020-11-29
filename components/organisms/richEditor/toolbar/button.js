@@ -1,8 +1,6 @@
-import PropTypes from "prop-types";
-import React from "react";
-import Style from "./button.style";
-import Tooltip from "../../../atoms/tooltip";
-import { ClassNames } from "@emotion/core";
+import PropTypes from 'prop-types';
+import React from 'react';
+import Tooltip from '../../../atoms/tooltip';
 
 const Button = props => {
   function onToggle(e) {
@@ -16,28 +14,23 @@ const Button = props => {
     }
 
     return (
-      <Tooltip key='dropdown' orientation={props.tooltipOrientation}>
+      <Tooltip key='dropdown' size='sm' orientation={props.tooltipOrientation}>
         {props.tooltip}
       </Tooltip>
     );
   }
 
-  const classes = {
-    'rich-editor-style-button': true,
-    'rich-editor-active-button': props.active,
-  };
+  const classes = [[props.style], 'rich-editor-style-button', props.active && 'rich-editor-active-button']
+    .filter(Boolean)
+    .join(' ');
 
   return (
-    <Style>
-      <ClassNames>
-        {({ cx }) => (
-          <div className={cx(classes)} onMouseDown={e => onToggle(e)}>
-            {props.label}
-            {renderTooltip()}
-          </div>
-        )}
-      </ClassNames>
-    </Style>
+    <div css={{ position: 'relative' }}>
+      <div className={classes} onMouseDown={e => onToggle(e)}>
+        {props.label}
+        {renderTooltip()}
+      </div>
+    </div>
   );
 };
 

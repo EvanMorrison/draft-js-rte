@@ -1,9 +1,10 @@
 import Button from '../../atoms/button';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { throttle } from 'lodash';
 import { css } from '@emotion/core';
 
-const LinkPopover = ({ editorRef, editorState, editLink }) => {
+const LinkPopover = React.forwardRef(({ editorRef, editorState, editLink }, ref) => {
   const editor = useRef(editorRef.editor.closest('.rich-text-editor'));
 
   const getLinkData = useCallback(() => {
@@ -66,11 +67,15 @@ const LinkPopover = ({ editorRef, editorState, editLink }) => {
   }, [editorState, getLinkData]);
 
   const style = theme => css`
+    position: fixed;
+    left: 0;
+    top: 0;
     padding: 6px;
     border: 1px solid ${theme.colors.border};
     border-radius: 3px;
     background: ${theme.colors.pageBackground};
     z-index: 1;
+    font-family: ${theme.fonts[0]};
     font-size: 14px;
     box-shadow: 2px 2px 12px -6px ${theme.colors.shadowOnPage};
 
@@ -86,8 +91,25 @@ const LinkPopover = ({ editorRef, editorState, editLink }) => {
     }
   `;
 
-  return (
-    <div css={theme => [{ position: 'fixed', left: linkState.left, top: linkState.bottom + 5 }, style(theme)]}>
+  const target = useRef(document.body);
+  useEffect(() => {
+    target.current = document.createElement('div');
+    document.body.appendChild(target.current);
+
+    return () => {
+      document.body.removeChild(target.current);
+    };
+  }, []);
+
+  return createPortal(
+    <div
+      ref={ref}
+      css={theme => [
+        { transform: `translate(${linkState.left}px, ${linkState.bottom + 5}px)` },
+        style(theme),
+        !linkState.left && { display: 'none' },
+      ]}
+    >
       <a
         css={{
           maxWidth: 300,
@@ -97,6 +119,7 @@ const LinkPopover = ({ editorRef, editorState, editLink }) => {
           textOverflow: 'ellipsis',
         }}
         href={linkState.url}
+        rel='noreferrer'
         target='_blank'
       >
         {linkState.url}
@@ -106,8 +129,9 @@ const LinkPopover = ({ editorRef, editorState, editLink }) => {
           Edit
         </Button>
       </span>
-    </div>
+    </div>,
+    target.current
   );
-};
+});
 
 export default LinkPopover;

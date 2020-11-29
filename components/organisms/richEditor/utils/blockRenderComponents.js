@@ -2,8 +2,8 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { EditorBlock, EditorState } from 'draft-js';
 import { defaultPreTagStyling } from './constants';
-import { camelCase } from 'lodash';
-import { Map } from 'immutable';
+import { camelCase, isNil } from 'lodash';
+import { Map, OrderedSet } from 'immutable';
 
 /**
  * The components in this file are used to render various Draft block types for display in the
@@ -140,13 +140,57 @@ export const Image = props => {
   );
 };
 
+// ListItem is used to render the pasted-list-item block type, for ul/ol lists that were pasted into the editor from another source, e.g. google docs
+// and thus are structured and formatted differently than native lists
+export const ListItem = props => {
+  const { block } = props;
+  let blockStyles = block
+    .getData()
+    .filter((v, k) => v !== 'class' && !['depth', 'listStyles', 'listStart'].includes(k))
+    .reduce((styles, v, k) => {
+      return styles.set(camelCase(k), v);
+    }, Map());
+  const listType = block.getData().get('listStart') > 0 ? 'ol' : 'ul';
+  const depth = block.getDepth() ?? 0;
+  const styleMap = {
+    0: 'decimal',
+    1: 'lower-alpha',
+    2: 'lower-roman',
+    3: 'upper-alpha',
+    4: 'upper-roman',
+  };
+  const listStyleType = blockStyles.get('listStyleType') ?? (listType === 'ol' ? styleMap[depth] : 'disc');
+  blockStyles = blockStyles.set('marginLeft', `${depth * 2.5}em`).set('listStyleType', listStyleType);
+  let dataAttr = {};
+  if (!isNil(block.getData().get('listStart'))) {
+    const listStyles = Map(block.getData().get('listStyles'))
+      .reduce((styles, v, k) => {
+        return styles.add(`${k}: ${v}`);
+      }, OrderedSet())
+      .toArray()
+      .join('; ');
+    dataAttr = {
+      'data-start': block.getData().get('listStart'),
+      'data-list-style': listStyles,
+      'data-pasted-list': true,
+    };
+  }
+  return (
+    <ol>
+      <li className='list-style-type' style={blockStyles.toJS()} {...dataAttr} data-type='list-item'>
+        <EditorBlock {...props} />
+      </li>
+    </ol>
+  );
+};
+
 // this component is used to render most Draft block types in the editor,
 // such as paragraph, unstyled, and the six heading levels
 export const StyledBlock = props => {
   const { block } = props;
   let blockStyles = block
     .getData()
-    .filter(v => v !== 'class')
+    .filter((v, k) => v !== 'class' && !['depth', 'listStyles', 'listStart'].includes(k))
     .reduce((styles, v, k) => {
       return styles.set(camelCase(k), v);
     }, Map());
@@ -172,53 +216,39 @@ export const StyledBlock = props => {
  * on each <td> element for its position in the table. Then as each subsequent block is rendered we use
  * createPortal from React-Dom to target the correct <td> element in the table to render that block into.
  */
-let refreshCount = 0; // used to prevent endless updating loop if table data is defective
-
 export const Table = props => {
   const {
     block,
-    contentState,
     blockProps: { editor },
   } = props;
-  const prevBlock = contentState.getBlockBefore(block.getKey());
-  const prevBlockIsSameTable =
-    prevBlock &&
-    prevBlock.getType() === 'table' &&
-    prevBlock.getData().get('tableKey') === block.getData().get('tableKey');
-  // if this is not the first table block, then the table's DOM structure has been rendered and we target the <td> element in the applicable position
-  if (prevBlockIsSameTable) {
+  // if this is not the first table block, then we target the <td> element in the applicable position
+  // to render the current block into.
+  if (block.getData().get('tablePosition') && !block.getData().get('tableShape')) {
     const position = block.getData().get('tablePosition');
-    const target = editor && editor.editor.querySelector(`[data-position='${position}']`);
+    const target = editor?.editor.querySelector(`[data-position='${position}']`);
     if (target) {
       return createPortal(<EditorBlock {...props} />, target);
     }
     /**
-     * If the target isn't in the DOM and this is the last cell in the table,
-     * force the editor to render its internal DOM, otherwise the table contents may
-     * not be visible in the editor until it receives focus.
-     * Note restoreEditorDOM is a pre-defined function on the editor.
-     * It also causes the editor to receive focus, so a fix to prevent unintented
-     * focus is in the reset() function of index.js
+     * If we get here then the target wasn't in the DOM yet. The reset and paste/insert-related
+     * functions use blur() and focus() to trigger a rerender, at which time the DOM will have been
+     * updated with the framework of the table structure.
      */
-    const nextBlock = contentState.getBlockAfter(block.getKey());
-    const nextBlockType = nextBlock && nextBlock.getType();
-    if (editor && nextBlockType !== 'table' && !refreshCount++) {
-      editor.restoreEditorDOM();
-    }
     return null;
   }
-  // here we know we are rendering the first block of the table and will render the whole DOM structure of the table
+  // If we get here we know we are rendering the first block of the table and will render the whole DOM structure of the table
   const data = block.getData();
   const tableKey = data.get('tableKey');
   const tableStyle = Map(data.get('tableStyle'))
     .mapKeys(k => camelCase(k))
     .toJS();
   const tableShape = data.get('tableShape');
+  const colgroup = data.get('tableColgroup');
 
   if (Array.isArray(tableShape)) {
-    refreshCount = 0;
     return (
-      <table css={tableStyle} id={tableKey}>
+      <table key={tableKey} css={tableStyle} id={tableKey}>
+        {colgroup && <colgroup dangerouslySetInnerHTML={{ __html: colgroup }}></colgroup>}
         <tbody>
           {tableShape.map((row, i) => (
             <tr
@@ -236,13 +266,25 @@ export const Table = props => {
                   .toJS();
                 if (cell.element === 'th') {
                   return (
-                    <th key={j} css={cellStyle} data-position={`${tableKey}-${i}-${j}`}>
+                    <th
+                      key={j}
+                      css={cellStyle}
+                      colSpan={cell.colspan}
+                      rowSpan={cell.rowspan}
+                      data-position={`${tableKey}-${i}-${j}`}
+                    >
                       {!!((i === 0) & (j === 0)) && <EditorBlock {...props} />}
                     </th>
                   );
                 }
                 return (
-                  <td key={j} css={cellStyle} data-position={`${tableKey}-${i}-${j}`}>
+                  <td
+                    key={j}
+                    css={cellStyle}
+                    colSpan={cell.colspan}
+                    rowSpan={cell.rowspan}
+                    data-position={`${tableKey}-${i}-${j}`}
+                  >
                     {!!((i === 0) & (j === 0)) && <EditorBlock {...props} />}
                   </td>
                 );

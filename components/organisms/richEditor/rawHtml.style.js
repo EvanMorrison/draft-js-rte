@@ -25,12 +25,5 @@ export default styled.div`
         }
       }
     }
-
-    textarea {
-      border-top-left-radius: 0;
-      border-top-right-radius: 0;
-      border-top: none;
-      font-family: 'menlo', monospace, sans-serif;
-    }
   }
 `;
