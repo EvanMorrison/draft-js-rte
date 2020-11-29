@@ -154,6 +154,8 @@ export default styled.div`
     left: -36px;
     position: absolute;
     text-align: right;
+    font-family: inherit;
+    font-size: inherit;
     width: 30px;
   }
 

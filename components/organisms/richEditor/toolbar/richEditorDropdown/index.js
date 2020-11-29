@@ -1,5 +1,5 @@
-import DropdownBtn from "../../../molecules/dropdownBtn";
-import Icon from "../../../atoms/icon";
+import DropdownBtn from "../../../../molecules/dropdownBtn";
+import Icon from "../../../../atoms/icon";
 import PropTypes from "prop-types";
 import React from "react";
 import style from "./dropdown.style";
@@ -12,11 +12,16 @@ export default class RichEditorDropdown extends React.Component {
 
     const { controlWidth, dropdownWidth } = this.props;
     this.state = {
+      showDropdown: false,
       open: false,
       controlWidth: controlWidth || 50,
       dropdownWidth: (dropdownWidth && dropdownWidth + 'px') || 'fit-content',
       orientation: 'left',
     };
+  }
+
+  componentDidMount() {
+    this.setState({ showDropdown: true });
   }
 
   componentDidUpdate(prevProps) {
@@ -47,6 +52,9 @@ export default class RichEditorDropdown extends React.Component {
   }
 
   render() {
+    // Conditionally render the DropdownBtn after component mounts because
+    // DropdownBtn uses useLayoutEffect which causes a warning with ssr
+    if (!this.state.showDropdown) return null;
     const dropdownProps = {
       buttonContent: this.renderBtnContent(),
       dropdownOpen: this.state.open,

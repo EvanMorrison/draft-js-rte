@@ -54,6 +54,15 @@ export default styled.div`
             fill: currentColor;
           }
 
+          &.OUTDENT {
+            padding: 4px 0 4px 6px;
+          }
+
+          &.INDENT {
+            padding: 4px 6px 4px 0;
+            margin-right: 8px;
+          }
+
           &:hover {
             background: ${props => props.theme.colors.primary};
             color: ${props => props.theme.colors.textOnPrimary};

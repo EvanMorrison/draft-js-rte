@@ -1,4 +1,4 @@
-import Icon from "../../../atoms/icon";
+import Icon from "../../../../atoms/icon";
 import React from "react";
 
 const DropdownContent = props => {

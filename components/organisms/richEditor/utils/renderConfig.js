@@ -1,9 +1,9 @@
 import React from 'react'; // eslint-disable-line no-unused-vars
-import { Image, HorizontalRule, Pagebreak, StyledBlock, Table } from './blockRenderComponents';
-import { camelCase, isEmpty, isNil, kebabCase } from 'lodash';
+import { Image, HorizontalRule, Pagebreak, StyledBlock, Table, ListItem } from './blockRenderComponents';
+import { camelCase, isEmpty, kebabCase } from 'lodash';
 import { COLORS, FONTS, FONT_SIZES, MAX_LIST_DEPTH, defaultPreTagStyling } from './constants';
 import { Map, OrderedSet } from 'immutable';
-import { genKey } from 'draft-js';
+import { DefaultDraftInlineStyle, genKey } from 'draft-js';
 
 /**
  * blockRenderMap, customStyleMap, customStyleFn & getBlockRendererFn are used by draft.js to convert its internal data structure
@@ -20,13 +20,18 @@ export const blockRenderMap = {
   paragraph: {
     element: 'section',
   },
+  // pasted-list-item is used for ul/ol lists that were pasted into the editor from another source, e.g. google docs
+  // and thus are formatted differently than natively created lists
+  'pasted-list-item': {
+    element: 'ol',
+  },
   table: {
     element: 'div',
   },
 };
 
 export const customStyleMap = (() => {
-  const styleMap = { STRIKETHROUGH: { textDecoration: 'line-through' } };
+  const styleMap = { ...DefaultDraftInlineStyle };
   ['backgroundColor', 'color'].forEach(style => {
     COLORS.forEach(color => {
       styleMap[`${style}.${color}`] = { [style]: color };
@@ -41,14 +46,19 @@ export const customStyleMap = (() => {
   return styleMap;
 })();
 
-// this is for handling styles not matched by the defaultStyleMap or customStyleMap
+// this is for handling inline styles, including draft's default styles, styles from the customStyleMap, and those from the style attribute of the html
 export const customStyleFn = style => {
   // "style" is an Immutable.js OrderedSet of inline styles for a given range of characters that share the same styling
-  // exclude styles matched by the defaut or customStyleMap
-  style = style.subtract(['BOLD', 'CODE', 'ITALIC', 'UNDERLINE']).filter(v => isNil(customStyleMap[v]));
+
+  // handle draftjs default styles
+  const defaultStyles = style.intersect(['BOLD', 'CODE', 'ITALIC', 'UNDERLINE']).reduce((map, v) => {
+    return map.merge(customStyleMap[v]);
+  }, Map());
+
+  style = style.subtract(['BOLD', 'CODE', 'ITALIC', 'UNDERLINE']);
 
   // separate out any entries that are a string of multiple styles
-  let groupedStyles = style.filter(v => v.includes(';'));
+  let groupedStyles = style.filter(v => v.includes(':'));
   style = style.subtract(groupedStyles);
 
   // convert string containing multiple styles to a CSS styles object
@@ -66,7 +76,7 @@ export const customStyleFn = style => {
       const key = v.shift().trim();
       const val = v.join('.').trim();
       return map.merge({ [key]: val });
-    }, groupedStyles)
+    }, groupedStyles.merge(defaultStyles))
     .toJS();
 
   if (isEmpty(style)) {
@@ -95,6 +105,11 @@ export const getBlockRendererFn = (editor, getEditorState, onChange) => block =>
     case 'page-break':
       return {
         component: Pagebreak,
+      };
+    case 'pasted-list-item':
+      return {
+        component: ListItem,
+        editable: true,
       };
     case 'unstyled':
     case 'paragraph':
@@ -142,6 +157,32 @@ export const stateFromHtmlOptions = {
         map[key] = val;
         return map;
       }, data);
+    // identify lists that were pasted in from another source rather than created natively in the editor. These get handled as a custom block type.
+    if (
+      element.tagName === 'LI' &&
+      (element.parentNode.getAttribute('start') || element.style.listStyleType !== 'none') &&
+      !element.className.split(' ').find(c => ['ordered-list-item', 'unordered-list-item'].includes(c))
+    ) {
+      const listType = element.parentNode.tagName === 'UL' ? 'ul' : 'ol';
+      if (element.parentNode.firstElementChild === element) {
+        data.listStyles = convertStyleStringToObject(element.parentNode.getAttribute('style') ?? 'margin-left: 36pt;');
+        data.listStart =
+          element.getAttribute('start') ?? element.parentNode.getAttribute('start') ?? (listType === 'ul' ? 0 : 1);
+        let start = data.listStart;
+        for (const child of element.parentNode.children) {
+          if (listType === 'ul') {
+            child.setAttribute('start', 0);
+          } else {
+            child.setAttribute('start', start++);
+          }
+        }
+      } else {
+        data.listStart = element.getAttribute('start');
+      }
+      data['list-style-type'] = element.style.listStyleType || (listType === 'ul' ? 'disc' : 'decimal');
+      return { type: 'pasted-list-item', data };
+    }
+
     if (element.tagName === 'FIGURE' && element.firstChild && element.firstChild.tagName === 'IMG') {
       let style = element.firstChild.getAttribute('style');
       style = convertStyleStringToObject(style);
@@ -160,40 +201,51 @@ export const stateFromHtmlOptions = {
       return { type: 'page-break', data };
     }
     if (element.tagName === 'P') {
+      const noMargin =
+        element.style.margin?.startsWith('0') ||
+        (element.style.marginTop?.startsWith('0') && element.style.marginBottom?.startsWith('0'));
+      if (noMargin) return { type: 'unstyled', data };
       return { type: 'paragraph', data };
     }
     if ((element.innerText || '').startsWith('---hr---')) {
       return { type: 'horizontal-rule', data };
     }
     if (['TD', 'TH'].includes(element.tagName)) {
-      // empty elements get ignored and can break a table, replace unrendered characters,
-      // ensure at minimum there is an non-breaking space
-      if (isEmpty(element.textContent.replace(/\n|\s/g, ''))) {
-        element.innerHTML = element.innerHTML.replace(/\n|<br>|<br\/>/g, '<br>').replace(/\s/g, '&nbsp;') || '&nbsp;';
-      }
       /**
        * To preserve tables when converting html into Draft block types, we store the full
        * table specifications with the first "cell", and save the table position for the others
        */
       const tableEl = element.closest('table');
+      const tHeadEl = element.closest('thead') ?? tableEl.querySelector('thead');
+      const tBodyEl = element.closest('tbody') ?? tableEl.querySelector('tbody');
+      const tableRows = tableEl.querySelectorAll('tr');
       // But if this table has a nested table within it
       // don't render the outer table or Draft-js will crash
       if (tableEl.querySelector('table')) {
         return { type: 'unstyled', data };
       }
+
+      // empty elements get ignored and can break a table, replace unrendered characters,
+      // ensure at minimum there is an non-breaking space
+      if (isEmpty(element.textContent.replace(/\s/g, ''))) {
+        element.innerHTML = '&nbsp;';
+      }
+
       const prevCell = element.previousElementSibling;
       const row = element.parentNode;
       const prevRow = row.previousElementSibling;
       // Check if this is not the first cell in the table, if it's not then we traverse the table
       // structure just far enough to get the cell's position and store it in the data used to create
       // the corresponding Draft block
-      if (prevCell || prevRow) {
+      if (prevCell || prevRow || (tHeadEl && [tableEl, tBodyEl].includes(row.parentNode))) {
         let found = false;
-        for (let i = 0, rows = tableEl.firstElementChild.children, rowCount = rows.length; i < rowCount; i++) {
+        for (let i = 0, rows = tableRows, rowCount = rows.length; i < rowCount; i++) {
           for (let j = 0, cells = rows[i].children, colCount = cells.length; j < colCount; j++) {
             if (cells[j] === element) {
               data.tableKey = tableKey;
               data.tablePosition = `${tableKey}-${i}-${j}`;
+              data.colspan = cells[j].getAttribute('colspan');
+              data.rowspan = cells[j].getAttribute('rowspan');
               found = true;
               break;
             }
@@ -207,16 +259,17 @@ export const stateFromHtmlOptions = {
       // Only the first cell in the table will go through the processing below, so the Draft block
       // created for it will have all the necessary data to render the empty table structure into
       // which we render the rest of the table blocks.
+      const colgroup = tableEl.querySelector('colgroup');
       const tableShape = [];
       tableKey = genKey();
       data.tableKey = tableKey;
       data.tablePosition = `${tableKey}-0-0`;
       data.tableStyle = convertStyleStringToObject(tableEl.getAttribute('style')) || {
-        'border-collapse': 'collapse',
         margin: '15px 0',
         width: '100%',
       };
-      for (let i = 0, rows = tableEl.firstElementChild.children, rowCount = rows.length; i < rowCount; i++) {
+      data.tableStyle['border-collapse'] = 'collapse';
+      for (let i = 0, rows = tableRows, rowCount = rows.length; i < rowCount; i++) {
         tableShape.push([]);
         const defaultStyle = {};
         if (i === 0) {
@@ -236,10 +289,14 @@ export const stateFromHtmlOptions = {
           tableShape[i][j] = {
             element: cells[j].tagName === 'TD' ? 'td' : 'th',
             style: cellStyle,
+            colspan: cells[j].getAttribute('colspan'),
+            rowspan: cells[j].getAttribute('rowspan'),
           };
         }
       }
+
       data.tableShape = tableShape;
+      data.tableColgroup = colgroup?.outerHTML;
       return { type: 'table', data };
     }
     return { data };
@@ -320,8 +377,8 @@ export const getStateToHtmlOptions = contentState => ({
    **/
   inlineStyles: (() => {
     const styles = {
-      BOLD: { element: 'strong' },
-      ITALIC: { element: 'em' },
+      BOLD: { style: { fontWeight: 'bold' } },
+      ITALIC: { style: { fontStyle: 'italic' } },
       UNDERLINE: { style: { textDecoration: 'underline' } },
       STRIKETHROUGH: { style: { textDecoration: 'line-through' } },
     };
@@ -373,6 +430,15 @@ export const getStateToHtmlOptions = contentState => ({
       const result = `<p${getClassesAndStyles({ block })}>${buildHtmlForBlockText('', block, contentState)}</p>`;
       return result;
     },
+    unstyled: block => {
+      if (block.getLength() === 0) {
+        return `<div${getClassesAndStyles({ block })}><br></div>`;
+      }
+      // get block-level styling and classes if any
+      // "result" will be the html eventually returned from this function
+      const result = `<div${getClassesAndStyles({ block })}>${buildHtmlForBlockText('', block, contentState)}</div>`;
+      return result;
+    },
     'horizontal-rule': block => {
       return '<hr>';
     },
@@ -405,6 +471,39 @@ export const getStateToHtmlOptions = contentState => ({
       const { src } = (block.getEntityAt(0) && contentState.getEntity(block.getEntityAt(0)).getData()) || {};
       return `<figure${classes}${figStyle}><img src="${src}"${imgStyle}/></figure>`;
     },
+    'pasted-list-item': block => {
+      const prevBlock = contentState.getBlockBefore(block.getKey());
+      if (prevBlock?.getType() === block.getType()) {
+        return '';
+      }
+      const data = block.getData();
+      let start = data.get('listStart');
+      start = (start && ` start="${start}"`) || '';
+      let listStyles = Map(data.get('listStyles'))
+        .reduce((set, v, k) => {
+          return set.add(`${k}: ${v}`);
+        }, OrderedSet())
+        .toArray()
+        .join('; ');
+      listStyles = listStyles && ` style="${listStyles}"`;
+      const listItems = contentState
+        .getBlockMap()
+        .skipUntil(v => v === block)
+        .takeWhile(v => v.getType().endsWith('list-item'))
+        .toList();
+      const listTag = block.getData().get('listStart') > 0 ? 'ol' : 'ul';
+      let currentDepth = block.getDepth();
+      return `<${listTag}${listStyles}${start}>${listItems
+        .map(block => {
+          const depth = block.getDepth();
+          const openTag = depth > currentDepth ? `<${listTag}><li` : depth < currentDepth ? `</${listTag}><li` : '<li';
+          currentDepth = depth;
+          return `
+${openTag}${getClassesAndStyles({ block })}>${buildHtmlForBlockText('', block, contentState)}</li>`;
+        })
+        .toArray()
+        .join('')}</${listTag}>`;
+    },
     table: block => {
       const prevBlock = contentState.getBlockBefore(block.getKey());
       if (prevBlock && prevBlock.getType() === 'table') {
@@ -428,8 +527,9 @@ export const getStateToHtmlOptions = contentState => ({
         .skipUntil(v => v.getType() === 'table' && v.getData().get('tableKey') === tableKey)
         .takeWhile(v => v.getType() === 'table')
         .toList();
-
-      return `<table${tableStyle}><tbody>${tableShape
+      const colgroup = data.get('tableColgroup') ?? '';
+      let cellCounter = 0;
+      return `<table${tableStyle}>${colgroup}<tbody>${tableShape
         .map((row, i) => {
           let rowStyle = Map(block.getData().get('rowStyle')[i])
             .reduce((set, v, k) => {
@@ -448,9 +548,21 @@ export const getStateToHtmlOptions = contentState => ({
                 .toArray()
                 .join('; ');
               cellStyle = cellStyle && ` style="${cellStyle}"`;
-              return `<${tag}${cellStyle}>${buildHtmlForBlockText(
+              let cellBlock = tableBlocks.get(cellCounter);
+              let colspan = cellBlock.getData().get('colspan');
+              colspan = colspan ? ` colspan=${colspan}` : '';
+              let rowspan = cellBlock.getData().get('rowspan');
+              rowspan = rowspan ? ` rowspan=${rowspan}` : '';
+
+              const [, rowNum, colNum] = cellBlock?.getData().get('tablePosition').split('-') ?? [];
+              if (i !== +rowNum || j !== +colNum) {
+                cellBlock = null;
+              } else {
+                cellCounter++;
+              }
+              return `<${tag}${cellStyle}${colspan}${rowspan}>${buildHtmlForBlockText(
                 '',
-                tableBlocks.get(i * row.length + j),
+                cellBlock,
                 contentState
               )}</${tag}>`;
             })
@@ -471,7 +583,7 @@ export const getStateToHtmlOptions = contentState => ({
     data.forEach((v, k) => {
       if (v === 'class') {
         classes = classes.add(k);
-      } else if (k !== 'depth') {
+      } else if (!['depth', 'listStyles', 'listStart'].includes(k)) {
         styles = styles.add(`${k}: ${v}`);
       }
     });
@@ -479,23 +591,21 @@ export const getStateToHtmlOptions = contentState => ({
     if (depth > 0 && !type.includes('list-item')) {
       styles = styles.add(`margin-left:${2.5 * depth}em`);
     } else if (type.includes('unordered-list-item') && depth <= MAX_LIST_DEPTH) {
-      ['list', 'unordered-list-item', `depth${depth}`].forEach(item => {
-        classes = classes.add(item);
-      });
-      [
+      classes.remove('ordered-list-item');
+      classes = OrderedSet.of('list', 'unordered-list-item', `depth${depth}`).union(classes);
+      styles = OrderedSet.of(
         `margin-left:${1.5 + (depth === 0 ? 1 : 0)}em`,
         `list-style-type: ${depth === 0 ? 'disc' : depth === 1 ? 'circle' : 'square'}`,
-        'position: relative',
-      ].forEach(item => {
-        styles = styles.add(item);
-      });
+        'position: relative'
+      ).union(styles);
     } else if (type.includes('ordered-list-item') && depth <= MAX_LIST_DEPTH) {
-      ['list', 'ordered-list-item', `depth${depth}`].forEach(item => {
-        classes = classes.add(item);
-      });
-      [`margin-left:${1.5 + (depth === 0 ? 1 : 0)}em`, 'list-style-type: none', 'position: relative'].forEach(item => {
-        styles = styles.add(item);
-      });
+      classes.remove('unordered-list-item');
+      classes = OrderedSet.of('list', 'ordered-list-item', `depth${depth}`).union(classes);
+      styles = OrderedSet.of(
+        `margin-left: ${1.5 + (depth === 0 ? 1 : 0)}em`,
+        'list-style-type: none',
+        'position: relative'
+      ).union(styles);
     }
 
     if (type === 'blockquote')
@@ -525,16 +635,18 @@ export const getStateToHtmlOptions = contentState => ({
 
 function getClassesAndStyles({ block, blockStyles = OrderedSet(), classes = OrderedSet() }) {
   const data = block.getData();
-  data.forEach((v, k) => {
-    if (v === 'class') {
-      classes = classes.add(k);
-    } else {
-      blockStyles = blockStyles.add(`${k}: ${v}`);
-    }
-  });
+  data
+    .filter((v, k) => !['depth', 'listStyles', 'listStart'].includes(k))
+    .forEach((v, k) => {
+      if (v === 'class') {
+        classes = classes.add(k);
+      } else {
+        blockStyles = blockStyles.add(`${k}: ${v}`);
+      }
+    });
   const margin = block.get('depth');
   if (margin) {
-    blockStyles = blockStyles.add(`margin-left: ${margin * 2.5}em`);
+    blockStyles = OrderedSet.of([`margin-left: ${margin * 2.5}em`]).union(blockStyles);
   }
   // convert classes & styles to strings and return
   classes = (classes.size && ` class="${classes.toArray().join(' ')}"`) || '';
@@ -553,47 +665,26 @@ function buildHtmlForBlockText(result, block, contentState) {
     (s, e) => {
       let close = '';
       let styles = block.getInlineStyleAt(s);
-      // separate out styles handled by the default or customStyleMap so they aren't lost in the customStyleFn
-      let defaultStyles = styles.intersect(['BOLD', 'CODE', 'ITALIC', 'UNDERLINE']);
-      defaultStyles = defaultStyles.union(styles.filter(v => !isNil(customStyleMap[v])));
-      // the remaining styles can be processed by customStyleFn
-      styles = Map(customStyleFn(styles)).reduce((set, v, k) => {
-        return set.add(`${k}${v ? `.${v}` : ''}`);
-      }, OrderedSet());
-      // now recombine the default and custom styles
-      styles = defaultStyles.union(styles);
+      styles = Map(customStyleFn(styles))
+        .reduce((styleSet, v, k) => {
+          k = kebabCase(k);
+          if (k === 'font-size' && /^\d*$/.test(v)) v += 'pt';
+          return styleSet.add(`${k}: ${v}`);
+        }, OrderedSet())
+        .toArray()
+        .join('; ');
 
+      styles = styles ? ` style="${styles}"` : '';
       // If a styleRange overlaps with an "entity" that starts and ends at the same points in the block
       // the entity represents an embeded link
       const startKey = block.getEntityAt(s);
       const endKey = block.getEntityAt(e - 1);
       const entity = startKey && startKey === endKey ? contentState.getEntity(startKey) : null;
-      styles.forEach(style => {
-        switch (style.split('.')[0]) {
-          case 'ITALIC':
-            result += '<em>';
-            close = '</em>' + close;
-            break;
-          case 'BOLD':
-            result += '<strong>';
-            close = '</strong>' + close;
-            break;
-          case 'UNDERLINE':
-            result += '<u style="text-decoration: underline">';
-            close = '</u>' + close;
-            break;
-          default: {
-            const arr = style.split('.');
-            const key = kebabCase(arr.shift());
-            let val = arr.join('.');
-            if (key === 'font-size' && /^\d*$/.test(val)) {
-              val += 'pt';
-            }
-            result += `<span style="${key}:${val}">`;
-            close = '</span>' + close;
-          }
-        }
-      });
+
+      if (styles) {
+        result += `<span${styles}>`;
+        close = '</span>' + close;
+      }
       // Now add the text content of the block for the current styleRange. If a "link" entity exists for this range
       // then wrap the text content in an anchor tag and add the href.
       // The multiple "replace" calls prevent empty paragraphs and extra spaces from collapsing and failing to render.

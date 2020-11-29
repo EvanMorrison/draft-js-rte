@@ -1,11 +1,10 @@
-import Button from "../../../../atoms/button";
+import Button from "../../../../../atoms/button";
 import Dropzone from "react-dropzone";
-import Icon from "../../../../atoms/icon";
+import Icon from "../../../../../atoms/icon";
 import ImagePreview from "./preview";
 import React, { useEffect, useRef, useState} from "react";
 import Style from "./image-previewer.style";
 import Translator from "simple-translator";
-import { FlexGrid, FlexItem } from "flex-item";
 
 const ImagePreviewer = props => {
   const [hasError, setHasError] = useState(false);
@@ -50,11 +49,11 @@ const ImagePreviewer = props => {
     } else {
       return (
         <React.Fragment>
-          <FlexGrid>
-            <FlexItem>
+          <div css={{ display: 'flex', width: '100%' }}>
+            <div css={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
               <ImagePreview src={image} previewWidth={'100%'} previewHeight={256} />
-            </FlexItem>
-          </FlexGrid>
+            </div>
+          </div>
           <Button block type='tertiary' onClick={clear}>
             Clear
           </Button>

@@ -34,8 +34,8 @@ export default styled.button`
 
   &.size-lg {
     font-size: 24px;
-    line-height: 38px;
-    min-height: 40px;
+    line-height: 34px;
+    min-height: 36px;
     padding: 0 24px;
 
     .btn-content {
@@ -45,8 +45,8 @@ export default styled.button`
 
   &.size-sm {
     font-size: 16px;
-    line-height: 22px;
-    min-height: 24px;
+    line-height: 24px;
+    min-height: 26px;
     padding: 0 12px;
 
     .btn-content {
@@ -58,26 +58,8 @@ export default styled.button`
     cursor: not-allowed;
   }
 
-  &:hover {
-    .tooltip:not(:hover) {
-      opacity: 1;
-      visibility: visible;
-
-      &.right {
-        left: calc(100% + 11px);
-      }
-
-      &.left {
-        right: calc(100% + 11px);
-      }
-
-      &.top {
-        margin-left: 11px;
-      }
-
-      &.bottom {
-        margin-left: 11px;
-      }
-    }
+  &:focus {
+    border-color: ${props => props.theme.colors.info};
+    box-shadow: 0 0 8px -1px ${props => props.theme.colors.info};
   }
 `;
