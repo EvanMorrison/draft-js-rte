@@ -10,7 +10,7 @@ const Checkbox = React.forwardRef(({ testid, ...props }, ref) => {
 
   function handleClick(e) {
     if (!props.disabled) {
-      props.onCheck(!props.checkStatus);
+      props.onCheck(!props.checkStatus, e);
     }
   }
 

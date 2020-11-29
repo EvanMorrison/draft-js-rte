@@ -7,7 +7,7 @@ import RawHtmlStyle from './rawHtml.style';
 import React, { useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import ScrollMessage from './toolbar/scrollMessage';
 import StatusBar from './statusBar';
-import Textarea from '../atoms/textarea';
+import Textarea from '../../atoms/textarea';
 import ToolbarStyle from './toolbar.style';
 import { stateFromHTML } from 'draft-js-import-html';
 import { stateToHTML } from 'draft-js-export-html';
@@ -1190,7 +1190,6 @@ const RichEditor = React.forwardRef((props, ref) => {
 
   const [scrollBottom, setScrollBottom] = useState(false);
   const handleScrolling = (e) => {
-    console.log(e.target.scrollHeight, e.target.scrollTop + e.target.clientHeight)
     setScrollBottom(e.target.scrollTop + e.target.clientHeight + 12 >= e.target.scrollHeight);
   }
 

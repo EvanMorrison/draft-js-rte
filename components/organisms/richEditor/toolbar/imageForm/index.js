@@ -1,5 +1,5 @@
-import Button from "../../../atoms/button";
-import Field from "../../../molecules/field";
+import Button from "../../../../atoms/button";
+import Field from "../../../../molecules/field";
 import FormLinker from "form-linker";
 // import Formatters from "../../../utils/formatters";
 import ImagePreviewer from "./imagePreviewer";

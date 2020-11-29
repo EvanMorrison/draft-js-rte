@@ -1,7 +1,7 @@
 import PropTypes from "prop-types";
 import React from "react";
 import Style from "./button.style";
-import Tooltip from "../../atoms/tooltip";
+import Tooltip from "../../../atoms/tooltip";
 import { ClassNames } from "@emotion/core";
 
 const Button = props => {

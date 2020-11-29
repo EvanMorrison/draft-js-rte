@@ -3,16 +3,8 @@ import React from 'react';
 import Style from './input.style';
 
 const Input = React.forwardRef((props, ref) => {
-  function blur() {
-    props.onBlur();
-  }
-
   function change(e) {
     props.onChange(e.target.value);
-  }
-
-  function focus() {
-    props.onFocus();
   }
 
   function type() {
@@ -39,12 +31,14 @@ const Input = React.forwardRef((props, ref) => {
     id: props.name,
     maxLength: props.maxLength,
     name: props.name,
-    onBlur: blur,
+    onBlur: props.onBlur,
     onChange: change,
-    onFocus: focus,
+    onFocus: props.onFocus,
+    onKeyDown: props.onKeyDown,
     placeholder: props.placeholder,
     type: type(),
     value: props.value ?? '',
+    autoComplete: props.autoComplete,
   };
 
   return <Style className={classes} {...inputProps} ref={ref} />;
@@ -63,16 +57,19 @@ Input.propTypes = {
   onBlur: PropTypes.func,
   onChange: PropTypes.func,
   onFocus: PropTypes.func,
+  onKeyDown: PropTypes.func,
   size: PropTypes.string,
   /** "text", "number", "currency", "password", or "hidden" */
   type: PropTypes.string,
   value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  autoComplete: PropTypes.string,
 };
 
 Input.defaultProps = {
   onChange: () => {},
   onFocus: () => {},
   onBlur: () => {},
+  onKeyDown: () => {},
   size: 'md',
 };
 

@@ -5,7 +5,6 @@ import SecondaryStyle from './secondary.style';
 import TertiaryStyle from './tertiary.style';
 import Tooltip from '../tooltip';
 import { isNil } from 'lodash';
-import { ClassNames } from '@emotion/core';
 
 const Button = ({
   block,
@@ -18,6 +17,9 @@ const Button = ({
   size,
   tooltip,
   tooltipOrientation,
+  tooltipContainer,
+  tooltipMaxWidth,
+  tooltipSize,
   type,
 }) => {
   const handleClick = e => {
@@ -35,31 +37,35 @@ const Button = ({
   };
 
   const renderContent = () => {
+    const tooltipProps = {
+      orientation: tooltipOrientation,
+      container: tooltipContainer,
+      maxWidth: tooltipMaxWidth,
+      size: tooltipSize,
+    };
     return [
       <div key='btn-content' className='btn-content'>
         {children}
       </div>,
       !isNil(tooltip) && (!disabled || hasTooltipWhenDisabled) && (
-        <Tooltip key='dropdown' orientation={tooltipOrientation}>
+        <Tooltip key='dropdown' {...tooltipProps}>
           {tooltip}
         </Tooltip>
       ),
     ];
   };
 
-  const classes = {
-    button: true,
-    danger: danger,
-    disabled: disabled,
-    primary: type === 'primary',
-    secondary: type === 'secondary',
-    tertiary: type === 'tertiary',
-    'size-lg': size === 'lg',
-    'size-md': size === 'md',
-    'size-sm': size === 'sm',
-    block: block,
-    [className]: true,
-  };
+  const classes = [
+    'button',
+    danger && 'danger',
+    disabled && 'disabled',
+    type,
+    `size-${size}`,
+    block && 'block',
+    className,
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   const props = {
     children: renderContent(),
@@ -67,19 +73,13 @@ const Button = ({
     type: 'button',
   };
 
-  return (
-    <ClassNames>
-      {({ cx }) => {
-        if (type === 'primary') {
-          return <PrimaryStyle className={cx(classes)} {...props} />;
-        } else if (type === 'tertiary') {
-          return <TertiaryStyle className={cx(classes)} {...props} />;
-        } else {
-          return <SecondaryStyle className={cx(classes)} {...props} />;
-        }
-      }}
-    </ClassNames>
-  );
+  if (type === 'primary') {
+    return <PrimaryStyle className={classes} {...props} />;
+  } else if (type === 'tertiary') {
+    return <TertiaryStyle className={classes} {...props} />;
+  } else {
+    return <SecondaryStyle className={classes} {...props} />;
+  }
 };
 
 Button.componentDescription = 'Standard extendable button.';
@@ -105,6 +105,12 @@ Button.propTypes = {
   tooltip: PropTypes.node,
   /** Top, bottom, left or right tooltip alignment. */
   tooltipOrientation: PropTypes.oneOf(['top', 'bottom', 'left', 'right']),
+  /** Boundary container that the tooltip should not overflow. Can be a query selector string or a ref to an element. */
+  tooltipContainer: PropTypes.oneOfType([PropTypes.object, PropTypes.string]),
+  /** max width of the tooltip */
+  tooltipMaxWidth: PropTypes.number,
+  /** adjusts font-size and line height of tooltip */
+  tooltipSize: PropTypes.oneOf(['sm', 'md', 'lg']),
   /** Button style type. Options are "primary", "secondary", and "tertiary". */
   type: PropTypes.oneOf(['primary', 'secondary', 'tertiary']),
 };
@@ -117,6 +123,7 @@ Button.defaultProps = {
   onClick: () => {},
   size: 'md',
   type: 'secondary',
+  tooltipSize: 'lg',
 };
 
 export default Button;
