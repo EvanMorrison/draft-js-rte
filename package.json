@@ -31,6 +31,7 @@
     "react": "17.0.1",
     "react-dom": "17.0.1",
     "react-dropzone": "4.2.11",
+    "react-spring": "8.0.27",
     "regenerator-runtime": "0.13.7",
     "simple-translator": "0.2.5",
     "use-onclickoutside": "0.3.1"
