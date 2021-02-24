@@ -183,13 +183,14 @@ export const stateFromHtmlOptions = {
       return { type: 'pasted-list-item', data };
     }
 
-    if (element.tagName === 'FIGURE' && element.firstChild && element.firstChild.tagName === 'IMG') {
+    if (element.firstChild && element.firstChild.tagName === 'IMG') {
       let style = element.firstChild.getAttribute('style');
       style = convertStyleStringToObject(style);
       data = {
         ...data,
         ...(style && { imgStyle: Map(style) }),
       };
+      return { type: 'atomic', data }
     }
     if (element.tagName === 'PRE') {
       if (!data.background) {
