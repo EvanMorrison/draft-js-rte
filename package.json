@@ -25,7 +25,7 @@
     "lodash": "4.17.20",
     "next": "^10.0.8",
     "off-color": "2.0.0",
-    "prismjs": "1.22.0",
+    "prismjs": "1.23.0",
     "react": "17.0.1",
     "react-dom": "17.0.1",
     "react-dropzone": "4.2.11",
