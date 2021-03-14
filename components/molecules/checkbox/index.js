@@ -3,7 +3,7 @@ import Label from '../../atoms/label';
 import PropTypes from 'prop-types';
 import React from 'react';
 import Style from './checkbox.style';
-import { useTheme } from 'emotion-theming';
+import { useTheme } from '@emotion/react';
 
 const Checkbox = React.forwardRef(({ testid, ...props }, ref) => {
   const theme = useTheme();

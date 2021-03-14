@@ -2,7 +2,7 @@ import Button from '../../atoms/button';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { throttle } from 'lodash';
-import { css } from '@emotion/core';
+import { css } from '@emotion/react';
 
 const LinkPopover = React.forwardRef(({ editorRef, editorState, editLink }, ref) => {
   const editor = useRef(editorRef.editor.closest('.rich-text-editor'));

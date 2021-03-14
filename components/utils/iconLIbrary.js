@@ -68,7 +68,7 @@ import {
 
 import { library } from "@fortawesome/fontawesome-svg-core";
 
-export default function() {
+function iconLibrary() {
   library.add(
     faAlignCenter,
     faAlignJustify,
@@ -137,3 +137,5 @@ export default function() {
     faUser  
   )
 }
+
+export default iconLibrary;
