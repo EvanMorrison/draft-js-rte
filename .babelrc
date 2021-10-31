@@ -18,7 +18,7 @@
     [
       "@emotion/babel-preset-css-prop",
       {
-        "autoLabel": true,
+        "autoLabel": "always",
         "labelFormat": "[local]",
         "sourceMap": true
       }

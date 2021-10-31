@@ -1,6 +1,6 @@
-import { css } from '@emotion/core';
+import { css } from '@emotion/react';
 
-export default props => css`
+const dropdownStyle = props => css`
   .rich-text-toolbar .editor-controls .control-row &.dropdown-button {
     > .button {
       width: ${props.controlWidth}px;
@@ -15,6 +15,8 @@ export default props => css`
     }
   }
 `;
+
+export default dropdownStyle;
 
 export const richEditorDropdown = props => css`
   .dropdown-button {

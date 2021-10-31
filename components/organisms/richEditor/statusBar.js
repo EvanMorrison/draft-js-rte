@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Icon from '../../atoms/icon';
 import styled from '@emotion/styled';
-import { useTheme } from 'emotion-theming';
+import { useTheme } from '@emotion/react';
 import { offColor as colorHelper } from 'off-color';
 
 const ProgressBar = ({ handleShowProgress, ...props }) => {
