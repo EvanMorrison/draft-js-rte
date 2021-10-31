@@ -1078,7 +1078,7 @@ const RichEditor = React.forwardRef((props, ref) => {
   };
 
   const removeSizeDataFromBlock = (newEditorState, block) => {
-    const data = block.getData().delete('height').delete('width');
+    const data = block.getData().delete('height').delete('width').delete('imgStyle');
     block = block.set('data', data);
     let contentState = newEditorState.getCurrentContent();
     let blockMap = contentState.getBlockMap();
@@ -1152,7 +1152,7 @@ const RichEditor = React.forwardRef((props, ref) => {
     insertCustomListItem: item => addTextToDocument(item), // an alias for insert text, kept for backward compatability
     insertText: text => addTextToDocument(text), // inserts plain text at the current selection point in the editor
     insertHtml: additionalHtml => addHtmlToDocument(additionalHtml), // inserts html at the current selection point in the editor
-    toggleEditMode: () => toggleEditMode(),
+    toggleEditMode: (newMode) => toggleEditMode(newMode),
     addEventListener: (event, fn) => editorDOMRef.current.addEventListener(event, fn),
     removeEventListener: (event, fn) => editorDOMRef.current.removeEventListener(event, fn),
     getEditorRef: () => editor.current,
@@ -1379,7 +1379,9 @@ const RichEditor = React.forwardRef((props, ref) => {
   };
 
   const inTextMode = useRef(false);
-  const toggleEditMode = () => {
+  const toggleEditMode = (newMode) => {
+    if (newMode === 'richText' && richMode) return;
+    if (newMode === 'codeView' && !richMode) return;
     if (richMode) {
       const currentHeight = editorDOMRef.current.getBoundingClientRect().height;
       setRichMode(false);
@@ -1395,7 +1397,7 @@ const RichEditor = React.forwardRef((props, ref) => {
   useEffect(() => {
     if (richMode && inTextMode.current) {
       inTextMode.current = false;
-      reset(null);
+      reset(props.value);
     }
   }, [richMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
