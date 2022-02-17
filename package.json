@@ -23,7 +23,7 @@
     "draft-js-import-html": "1.4.1",
     "form-linker": "1.2.0",
     "lodash": "^4.17.21",
-    "next": "^12.0.5",
+    "next": "^12.1.0",
     "off-color": "2.0.0",
     "prismjs": "^1.25.0",
     "react": "^17.0.2",
